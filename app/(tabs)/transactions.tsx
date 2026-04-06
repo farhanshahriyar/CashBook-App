@@ -1,204 +1,156 @@
 import React, { useState, useMemo } from 'react';
 import {
   View,
-  StyleSheet,
   Text,
-  FlatList,
+  ScrollView,
   SafeAreaView,
   TouchableOpacity,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../../contexts/FinanceContext';
-import { TransactionForm } from '../../components/finance/TransactionForm';
-import { TransactionItem } from '../../components/finance/TransactionItem';
-import { COLORS } from '../../lib/constants';
-import {
-  formatMonth,
-  getMonthKey,
-  getAdjacentMonths,
-} from '../../lib/format';
 import { AppModal } from '../../components/ui/Modal';
-import type { Transaction } from '../../lib/db/queries';
+import { TransactionForm } from '../../components/finance/TransactionForm';
+import tw from 'twrnc';
+
+type FilterType = 'All' | 'Income' | 'Expense';
 
 export default function TransactionsScreen() {
-  const { transactions, addTransaction, editTransaction, removeTransaction } = useFinance();
-  const [monthKey, setMonthKey] = useState(getMonthKey());
+  const { transactions, addTransaction } = useFinance();
+  const [filter, setFilter] = useState<FilterType>('All');
   const [modalVisible, setModalVisible] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter((tx) => {
-      const txMonth = getMonthKey(new Date(tx.date));
-      return txMonth === monthKey;
+  // Group transactions by date
+  const groupedTransactions = useMemo(() => {
+    const filtered = transactions.filter(tx => {
+      if (filter === 'Income') return tx.type === 'income';
+      if (filter === 'Expense') return tx.type === 'expense';
+      return true;
     });
-  }, [transactions, monthKey]);
 
-  const handleAdd = (data: { type: 'income' | 'expense'; amount: number; category: string; note: string; date: string }) => {
-    if (editingTransaction) {
-      editTransaction({ ...data, id: editingTransaction.id });
-    } else {
-      addTransaction(data);
+    const groups: { [key: string]: typeof transactions } = {};
+    filtered.forEach(tx => {
+      const dateObj = new Date(tx.date);
+      const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
+      const monthDay = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
+      const key = `${dayName}, ${monthDay}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(tx);
+    });
+    
+    return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
+  }, [transactions, filter]);
+
+  const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+  const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+
+  const getCategoryIcon = (category: string) => {
+    switch (category.toLowerCase()) {
+      case 'food & drink':
+      case 'food':
+        return { name: 'fast-food-outline', bg: 'bg-orange-100', color: '#D97706' };
+      case 'transport':
+      case 'transportation':
+        return { name: 'navigate-outline', bg: 'bg-indigo-100', color: '#4F46E5' };
+      case 'entertainment':
+        return { name: 'headset-outline', bg: 'bg-pink-100', color: '#DB2777' };
+      default:
+        return { name: 'trending-up-outline', bg: 'bg-teal-100', color: '#0D9488' };
     }
-    setModalVisible(false);
-    setEditingTransaction(null);
   };
-
-  const handleEdit = (tx: Transaction) => {
-    setEditingTransaction(tx);
-    setModalVisible(true);
-  };
-
-  const handleDelete = (id: string) => {
-    removeTransaction(id);
-  };
-
-  const handleOpenAdd = () => {
-    setEditingTransaction(null);
-    setModalVisible(true);
-  };
-
-  const handleCloseModal = () => {
-    setModalVisible(false);
-    setEditingTransaction(null);
-  };
-
-  const adjacent = getAdjacentMonths(monthKey);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={tw`flex-1 bg-[#F8FAFC]`}>
       <StatusBar style="dark" />
-
-      {/* Month Selector */}
-      <View style={styles.monthSelector}>
-        <TouchableOpacity
-          onPress={() => setMonthKey(adjacent.prev)}
-          style={styles.monthButton}
+      
+      {/* Header */}
+      <View style={tw`flex-row justify-between items-center px-6 pt-4 pb-2 mt-4`}>
+        <Text style={tw`text-3xl font-bold text-slate-900`}>Transactions</Text>
+        <TouchableOpacity 
+          onPress={() => setModalVisible(true)}
+          style={tw`w-10 h-10 bg-green-100 rounded-full items-center justify-center`}
         >
-          <Text style={styles.monthButtonText}>&larr;</Text>
-        </TouchableOpacity>
-        <Text style={styles.monthLabel}>{formatMonth(monthKey + '-01')}</Text>
-        <TouchableOpacity
-          onPress={() => setMonthKey(adjacent.next)}
-          style={styles.monthButton}
-        >
-          <Text style={styles.monthButtonText}>&rarr;</Text>
+          <Ionicons name="add" size={24} color="#16A34A" />
         </TouchableOpacity>
       </View>
 
-      {/* Transaction List */}
-      {filteredTransactions.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No transactions this month</Text>
-          <Text style={styles.emptySubtext}>Tap + to add one</Text>
+      {/* Summary Pills */}
+      <View style={tw`flex-row px-6 mb-4 mt-2`}>
+        <View style={tw`bg-green-100 px-3 py-1.5 rounded-xl flex-row items-center mr-3`}>
+          <Ionicons name="arrow-down" size={14} color="#16A34A" />
+          <Text style={tw`text-green-700 font-semibold ml-1 text-sm`}>+৳{totalIncome.toFixed(0)}</Text>
         </View>
-      ) : (
-        <FlatList
-          data={filteredTransactions}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.listItem}>
-              <TransactionItem
-                transaction={item}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-              />
+        <View style={tw`bg-red-100 px-3 py-1.5 rounded-xl flex-row items-center`}>
+          <Ionicons name="arrow-up" size={14} color="#DC2626" />
+          <Text style={tw`text-red-700 font-semibold ml-1 text-sm`}>-৳{totalExpense.toFixed(0)}</Text>
+        </View>
+      </View>
+
+      {/* Filter Tabs */}
+      <View style={tw`flex-row px-6 mb-6 mt-2`}>
+        {(['All', 'Income', 'Expense'] as FilterType[]).map((tab) => (
+          <TouchableOpacity
+            key={tab}
+            onPress={() => setFilter(tab)}
+            style={tw`px-5 py-2 rounded-full mr-3 ${filter === tab ? 'bg-[#16A34A]' : 'bg-slate-100'}`}
+          >
+            <Text style={tw`font-semibold ${filter === tab ? 'text-white' : 'text-slate-600'}`}>
+              {tab}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Transactions List */}
+      <ScrollView style={tw`flex-1 px-4`} showsVerticalScrollIndicator={false}>
+        {groupedTransactions.map(([dateKey, dayTransactions]) => (
+          <View key={dateKey} style={tw`mb-6`}>
+            <Text style={tw`text-slate-500 font-bold text-xs mb-3 px-2 tracking-wider uppercase`}>
+              {dateKey}
+            </Text>
+            <View style={tw`bg-white rounded-3xl pt-2 pb-2 pl-3 pr-3 shadow-sm`}>
+              {dayTransactions.map((tx, index) => {
+                const iconConf = getCategoryIcon(tx.category);
+                const isIncome = tx.type === 'income';
+                return (
+                  <View 
+                    key={tx.id} 
+                    style={tw`flex-row items-center py-3 ${index !== dayTransactions.length - 1 ? 'border-b border-slate-50' : ''}`}
+                  >
+                    <View style={tw`w-12 h-12 rounded-full items-center justify-center ${isIncome ? 'bg-green-100' : iconConf.bg}`}>
+                      <Ionicons name={isIncome ? 'trending-up-outline' : iconConf.name as any} size={20} color={isIncome ? '#16A34A' : iconConf.color} />
+                    </View>
+                    
+                    <View style={tw`flex-1 ml-4 justify-center`}>
+                      <Text style={tw`text-[16px] font-semibold text-slate-900 pb-0.5`}>{tx.note || tx.category}</Text>
+                      <Text style={tw`text-[13px] text-slate-500`}>{isIncome ? 'Income' : tx.category}</Text>
+                    </View>
+                    
+                    <Text style={tw`text-[16px] font-bold ${isIncome ? 'text-[#16A34A]' : 'text-red-700'}`}>
+                      {isIncome ? '+' : '-'}৳{tx.amount.toFixed(2)}
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
-          )}
-          contentContainerStyle={styles.listContent}
-        />
-      )}
+          </View>
+        ))}
+        {groupedTransactions.length === 0 && (
+          <View style={tw`items-center justify-center py-20`}>
+            <Text style={tw`text-slate-400`}>No transactions found.</Text>
+          </View>
+        )}
+      </ScrollView>
 
-      {/* Add Button */}
-      <TouchableOpacity style={styles.fab} onPress={handleOpenAdd}>
-        <Text style={styles.fabText}>+</Text>
-      </TouchableOpacity>
-
-      {/* Modal */}
-      <AppModal
-        visible={modalVisible}
-        onClose={handleCloseModal}
-        title={editingTransaction ? 'Edit Transaction' : 'New Transaction'}
-      >
+      {/* Form Modal */}
+      <AppModal visible={modalVisible} onClose={() => setModalVisible(false)} title="New Transaction">
         <TransactionForm
-          transaction={editingTransaction ?? undefined}
-          onSubmit={handleAdd}
+          onSubmit={(data) => {
+            addTransaction(data);
+            setModalVisible(false);
+          }}
         />
       </AppModal>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  monthSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: COLORS.card,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  monthButton: {
-    padding: 8,
-  },
-  monthButtonText: {
-    fontSize: 18,
-    color: COLORS.accent,
-    fontWeight: '600',
-  },
-  monthLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  listContent: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 8,
-  },
-  listItem: {
-    borderBottomColor: COLORS.border,
-    borderBottomWidth: 0,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    marginBottom: 4,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 108,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: COLORS.accent,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  fabText: {
-    fontSize: 28,
-    color: '#FFFFFF',
-    fontWeight: '300',
-    lineHeight: 28,
-  },
-});

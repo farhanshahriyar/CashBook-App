@@ -1,17 +1,20 @@
 export const COLORS = {
-  primary: '#0F172A',
-  accent: '#3B82F6',
+  primary: '#16A34A', // Vibrant green
+  primaryLight: '#4ADE80',
+  primaryDark: '#15803D',
+  accent: '#10B981',
   background: '#F8FAFC',
   card: '#FFFFFF',
   text: '#0F172A',
   textSecondary: '#64748B',
   border: '#E2E8F0',
-  income: '#10B981',
+  income: '#16A34A', // Using primary green for income
   expense: '#EF4444',
   accentLight: '#EFF6FF',
   incomeLight: '#ECFDF5',
   expenseLight: '#FEF2F2',
   white: '#FFFFFF',
+  overlay: 'rgba(255, 255, 255, 0.15)', // For glassmorphic overlays on green background
 };
 
 export const SPACING = {
