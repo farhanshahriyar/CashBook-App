@@ -4,10 +4,12 @@ import * as LocalAuthentication from 'expo-local-authentication';
 
 const LOCK_ENABLED_KEY = 'cashbook_biometric_enabled';
 
+type BiometricTypeString = 'fingerprint' | 'face' | 'unknown' | 'none';
+
 interface AppLockState {
   isLocked: boolean;
   isBiometricEnabled: boolean;
-  biometricType: LocalAuthentication.AuthenticationType;
+  biometricType: BiometricTypeString;
   isEnrolled: boolean;
 }
 
@@ -18,11 +20,18 @@ interface AppLockContextType extends AppLockState {
 
 const AppLockContext = createContext<AppLockContextType | null>(null);
 
+function authTypeToString(type: LocalAuthentication.AuthenticationType): BiometricTypeString {
+  if (type === LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION) return 'face';
+  if (type === LocalAuthentication.AuthenticationType.FINGERPRINT) return 'fingerprint';
+  if (type === LocalAuthentication.AuthenticationType.IRIS) return 'fingerprint';
+  return 'none';
+}
+
 export function AppLockProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppLockState>({
     isLocked: true,
     isBiometricEnabled: false,
-    biometricType: LocalAuthentication.AuthenticationType.NONE,
+    biometricType: 'none',
     isEnrolled: false,
   });
 
@@ -30,7 +39,7 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
     const enrolled = await LocalAuthentication.isEnrolledAsync();
     const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
     const isEnrolled = enrolled && types.length > 0;
-    const biometricType = isEnrolled && types.length > 0 ? types[0] : LocalAuthentication.AuthenticationType.NONE;
+    const biometricType = isEnrolled ? authTypeToString(types[0]) : 'none';
     setState((prev) => ({
       ...prev,
       isEnrolled,
@@ -38,20 +47,6 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
       isLocked: false,
     }));
   }, []);
-
-  useEffect(() => {
-    (async () => {
-      const stored = await AsyncStorage.getItem(LOCK_ENABLED_KEY);
-      const enabled = stored === 'true';
-      await checkEnrollment();
-      if (enabled) {
-        const result = await authenticate();
-        if (!result) {
-          setState((prev) => ({ ...prev, isLocked: true }));
-        }
-      }
-    })();
-  }, [checkEnrollment]);
 
   const authenticate = useCallback(async (): Promise<boolean> => {
     const result = await LocalAuthentication.authenticateAsync({
@@ -65,6 +60,20 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
     }
     return result.success;
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      const stored = await AsyncStorage.getItem(LOCK_ENABLED_KEY);
+      const enabled = stored === 'true';
+      await checkEnrollment();
+      if (enabled && state.isEnrolled) {
+        const result = await authenticate();
+        if (!result) {
+          setState((prev) => ({ ...prev, isLocked: true }));
+        }
+      }
+    })();
+  }, [checkEnrollment, authenticate]);
 
   const setBiometricEnabled = useCallback(async (enabled: boolean) => {
     await AsyncStorage.setItem(LOCK_ENABLED_KEY, String(enabled));

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { COLORS, CATEGORY_COLORS } from '../../lib/constants';
 
 interface BadgeProps {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, ScrollView } from 'react-native';
+import { View, StyleSheet, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { COLORS, TRANSACTION_CATEGORIES, CATEGORY_COLORS } from '../../lib/constants';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -84,21 +84,26 @@ export function TransactionForm({ transaction, onSubmit }: TransactionFormProps)
         returnKeyType="next"
       />
 
-      {/* Category */}
-      <Text style={styles.label}>Category</Text>
       <View style={styles.categoryGrid}>
-        {TRANSACTION_CATEGORIES.map((cat) => (
-          <View key={cat} style={styles.categoryChip}>
-            <Badge
-              label={cat}
-              type="category"
+        {TRANSACTION_CATEGORIES.map((cat) => {
+          const isSelected = category === cat;
+          return (
+            <TouchableOpacity
+              key={cat}
               style={[
                 styles.categoryItem,
-                category === cat && { borderWidth: 2, borderColor: CATEGORY_COLORS[cat] || COLORS.accent },
+                isSelected && {
+                  borderWidth: 2,
+                  borderColor: CATEGORY_COLORS[cat] || COLORS.accent,
+                  borderRadius: 20,
+                },
               ]}
-            />
-          </View>
-        ))}
+              onPress={() => setCategory(cat)}
+            >
+              <Badge label={cat} type="category" />
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {/* Note */}

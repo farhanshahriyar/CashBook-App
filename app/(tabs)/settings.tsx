@@ -24,7 +24,7 @@ export default function SettingsScreen() {
   const { transactions, monthlyIncome, monthlyExpense } = useFinance();
   const [exporting, setExporting] = useState(false);
 
-  const authTypeName = biometricTypeToString(biometricType);
+  const authTypeName = biometricType.charAt(0).toUpperCase() + biometricType.slice(1);
 
   const handleExportPDF = useCallback(async () => {
     setExporting(true);
