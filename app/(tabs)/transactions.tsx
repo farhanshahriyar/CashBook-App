@@ -64,7 +64,7 @@ export default function TransactionsScreen() {
       <StatusBar style="dark" />
       
       {/* Header */}
-      <View style={tw`flex-row justify-between items-center px-6 pt-4 pb-2 mt-4`}>
+      <View style={tw`flex-row justify-between items-center px-6 py-3 mt-2`}>
         <Text style={tw`text-3xl font-bold text-slate-900`}>Transactions</Text>
         <TouchableOpacity 
           onPress={() => setModalVisible(true)}
@@ -75,7 +75,7 @@ export default function TransactionsScreen() {
       </View>
 
       {/* Summary Pills */}
-      <View style={tw`flex-row px-6 mb-4 mt-2`}>
+      <View style={tw`flex-row px-6 mb-3`}>
         <View style={tw`bg-green-100 px-3 py-1.5 rounded-xl flex-row items-center mr-3`}>
           <Ionicons name="arrow-down" size={14} color="#16A34A" />
           <Text style={tw`text-green-700 font-semibold ml-1 text-sm`}>+৳{totalIncome.toFixed(0)}</Text>
@@ -87,7 +87,7 @@ export default function TransactionsScreen() {
       </View>
 
       {/* Filter Tabs */}
-      <View style={tw`flex-row px-6 mb-6 mt-2`}>
+      <View style={tw`flex-row px-6 mb-4`}>
         {(['All', 'Income', 'Expense'] as FilterType[]).map((tab) => (
           <TouchableOpacity
             key={tab}

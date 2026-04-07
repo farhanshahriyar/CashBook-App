@@ -78,7 +78,7 @@ export default function GoalsScreen() {
       <StatusBar style="dark" />
       
       {/* Header */}
-      <View style={tw`flex-row justify-between items-center px-6 pt-4 pb-1 mt-4`}>
+      <View style={tw`flex-row justify-between items-center px-6 py-3 mt-2`}>
         <Text style={tw`text-3xl font-bold text-slate-900`}>Saving Goals</Text>
         <TouchableOpacity 
           onPress={openCreate}
