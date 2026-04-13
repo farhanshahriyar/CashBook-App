@@ -5,6 +5,7 @@ import {
   ScrollView,
   SafeAreaView,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -78,7 +79,7 @@ export default function GoalsScreen() {
       <StatusBar style="dark" />
       
       {/* Header */}
-      <View style={tw`flex-row justify-between items-center px-6 py-3 mt-2`}>
+      <View style={[tw`flex-row justify-between items-center px-5 pt-4 pb-3`, Platform.OS === 'android' && { paddingTop: 48 }]}>
         <Text style={tw`text-3xl font-bold text-slate-900`}>Saving Goals</Text>
         <TouchableOpacity 
           onPress={openCreate}
@@ -87,9 +88,9 @@ export default function GoalsScreen() {
           <Ionicons name="add" size={24} color="#16A34A" />
         </TouchableOpacity>
       </View>
-      <Text style={tw`text-slate-500 text-sm px-6 mb-6 mt-1`}>{goals.length} active goals</Text>
+      <Text style={tw`text-slate-500 text-sm px-5 mb-4`}>{goals.length} active goals</Text>
 
-      <ScrollView style={tw`flex-1 px-4`} showsVerticalScrollIndicator={false}>
+      <ScrollView style={tw`flex-1 px-5`} contentContainerStyle={tw`pb-24`} showsVerticalScrollIndicator={false}>
         
         {/* Total Summary Card */}
         <View style={tw`bg-white rounded-3xl p-5 shadow-sm mb-6`}>
@@ -171,7 +172,7 @@ export default function GoalsScreen() {
           );
         })}
         
-        <View style={tw`h-20`} />
+
       </ScrollView>
 
       {/* Shared Modal */}

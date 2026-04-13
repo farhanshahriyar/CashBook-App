@@ -5,6 +5,7 @@ import {
   ScrollView,
   SafeAreaView,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -64,7 +65,7 @@ export default function TransactionsScreen() {
       <StatusBar style="dark" />
       
       {/* Header */}
-      <View style={tw`flex-row justify-between items-center px-6 py-3 mt-2`}>
+      <View style={[tw`flex-row justify-between items-center px-5 pt-4 pb-3`, Platform.OS === 'android' && { paddingTop: 48 }]}>
         <Text style={tw`text-3xl font-bold text-slate-900`}>Transactions</Text>
         <TouchableOpacity 
           onPress={() => setModalVisible(true)}
@@ -75,7 +76,7 @@ export default function TransactionsScreen() {
       </View>
 
       {/* Summary Pills */}
-      <View style={tw`flex-row px-6 mb-3`}>
+      <View style={tw`flex-row px-5 mb-3`}>
         <View style={tw`bg-green-100 px-3 py-1.5 rounded-xl flex-row items-center mr-3`}>
           <Ionicons name="arrow-down" size={14} color="#16A34A" />
           <Text style={tw`text-green-700 font-semibold ml-1 text-sm`}>+৳{totalIncome.toFixed(0)}</Text>
@@ -87,7 +88,7 @@ export default function TransactionsScreen() {
       </View>
 
       {/* Filter Tabs */}
-      <View style={tw`flex-row px-6 mb-4`}>
+      <View style={tw`flex-row px-5 mb-4`}>
         {(['All', 'Income', 'Expense'] as FilterType[]).map((tab) => (
           <TouchableOpacity
             key={tab}
@@ -102,10 +103,10 @@ export default function TransactionsScreen() {
       </View>
 
       {/* Transactions List */}
-      <ScrollView style={tw`flex-1 px-4`} showsVerticalScrollIndicator={false}>
+      <ScrollView style={tw`flex-1 px-5`} contentContainerStyle={tw`pb-24`} showsVerticalScrollIndicator={false}>
         {groupedTransactions.map(([dateKey, dayTransactions]) => (
           <View key={dateKey} style={tw`mb-6`}>
-            <Text style={tw`text-slate-500 font-bold text-xs mb-3 px-2 tracking-wider uppercase`}>
+            <Text style={tw`text-slate-500 font-bold text-xs mb-3 tracking-wider uppercase`}>
               {dateKey}
             </Text>
             <View style={tw`bg-white rounded-3xl pt-2 pb-2 pl-3 pr-3 shadow-sm`}>
