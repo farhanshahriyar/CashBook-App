@@ -27,29 +27,36 @@ export const SPACING = {
 };
 
 export const TRANSACTION_CATEGORIES = [
-  'Food',
+  'Food & Drink',
   'Transport',
-  'Shopping',
-  'Bills',
   'Entertainment',
-  'Education',
+  'Shopping',
+  'Housing',
   'Health',
-  'Salary',
-  'Freelance',
+  'Education',
   'Other',
 ];
 
 export const CATEGORY_COLORS: Record<string, string> = {
-  Food: '#F59E0B',
+  'Food & Drink': '#F59E0B',
   Transport: '#3B82F6',
-  Shopping: '#8B5CF6',
-  Bills: '#EF4444',
   Entertainment: '#EC4899',
-  Education: '#10B981',
+  Shopping: '#8B5CF6',
+  Housing: '#6366F1',
   Health: '#06B6D4',
-  Salary: '#22C55E',
-  Freelance: '#F97316',
+  Education: '#10B981',
   Other: '#64748B',
+};
+
+export const CATEGORY_ICONS: Record<string, string> = {
+  'Food & Drink': 'fast-food-outline',
+  Transport: 'navigate-outline',
+  Entertainment: 'headset-outline',
+  Shopping: 'bag-handle-outline',
+  Housing: 'home-outline',
+  Health: 'heart-outline',
+  Education: 'school-outline',
+  Other: 'ellipsis-horizontal-outline',
 };
 
 export const GOAL_EMOJIS = [

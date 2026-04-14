@@ -1,10 +1,100 @@
+import { useEffect } from 'react';
+import { Text, TextInput } from 'react-native';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { FinanceProvider } from '../contexts/FinanceContext';
 import { AppLockProvider } from '../contexts/AppLockContext';
 import { COLORS } from '../lib/constants';
+import {
+  useFonts,
+  Inter_300Light,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+  Inter_900Black,
+} from '@expo-google-fonts/inter';
+import * as SplashScreen from 'expo-splash-screen';
+
+// Prevent auto-hiding the splash screen so we can wait for fonts
+SplashScreen.preventAutoHideAsync();
+
+// Font weight to Inter family mapping
+const INTER_WEIGHT_MAP: Record<string, string> = {
+  '300': 'Inter-Light',
+  '400': 'Inter-Regular',
+  'normal': 'Inter-Regular',
+  '500': 'Inter-Medium',
+  '600': 'Inter-SemiBold',
+  '700': 'Inter-Bold',
+  'bold': 'Inter-Bold',
+  '800': 'Inter-ExtraBold',
+  '900': 'Inter-Black',
+};
+
+// Override default Text rendering to use Inter font globally
+function setDefaultFont() {
+  const oldTextRender = (Text as any).render;
+  if (oldTextRender) {
+    (Text as any).render = function (...args: any[]) {
+      const origin = oldTextRender.call(this, ...args);
+      const flatStyle = origin.props?.style;
+      const weight = flatStyle?.fontWeight || '400';
+      const fontFamily = INTER_WEIGHT_MAP[weight] || 'Inter-Regular';
+
+      return {
+        ...origin,
+        props: {
+          ...origin.props,
+          style: [{ fontFamily }, flatStyle],
+        },
+      };
+    };
+  }
+
+  // Also apply to TextInput
+  const oldInputRender = (TextInput as any).render;
+  if (oldInputRender) {
+    (TextInput as any).render = function (...args: any[]) {
+      const origin = oldInputRender.call(this, ...args);
+      const flatStyle = origin.props?.style;
+      const weight = flatStyle?.fontWeight || '400';
+      const fontFamily = INTER_WEIGHT_MAP[weight] || 'Inter-Regular';
+
+      return {
+        ...origin,
+        props: {
+          ...origin.props,
+          style: [{ fontFamily }, flatStyle],
+        },
+      };
+    };
+  }
+}
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    'Inter-Light': Inter_300Light,
+    'Inter-Regular': Inter_400Regular,
+    'Inter-Medium': Inter_500Medium,
+    'Inter-SemiBold': Inter_600SemiBold,
+    'Inter-Bold': Inter_700Bold,
+    'Inter-ExtraBold': Inter_800ExtraBold,
+    'Inter-Black': Inter_900Black,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      setDefaultFont();
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
     <SafeAreaProvider>
       <AppLockProvider>

@@ -12,7 +12,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../../contexts/FinanceContext';
 import { AppModal } from '../../components/ui/Modal';
 import { TransactionForm } from '../../components/finance/TransactionForm';
-import tw from 'twrnc';
+import { CATEGORY_COLORS, CATEGORY_ICONS, COLORS } from '../../lib/constants';
+import tw from '../../lib/tw';
 
 type FilterType = 'All' | 'Income' | 'Expense';
 
@@ -38,36 +39,41 @@ export default function TransactionsScreen() {
       if (!groups[key]) groups[key] = [];
       groups[key].push(tx);
     });
-    
+
     return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
   }, [transactions, filter]);
 
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
   const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
 
-  const getCategoryIcon = (category: string) => {
-    switch (category.toLowerCase()) {
-      case 'food & drink':
-      case 'food':
-        return { name: 'fast-food-outline', bg: 'bg-orange-100', color: '#D97706' };
-      case 'transport':
-      case 'transportation':
-        return { name: 'navigate-outline', bg: 'bg-indigo-100', color: '#4F46E5' };
-      case 'entertainment':
-        return { name: 'headset-outline', bg: 'bg-pink-100', color: '#DB2777' };
-      default:
-        return { name: 'trending-up-outline', bg: 'bg-teal-100', color: '#0D9488' };
-    }
+  const getCategoryConfig = (category: string) => {
+    const icon = CATEGORY_ICONS[category] || 'ellipsis-horizontal-outline';
+    const color = CATEGORY_COLORS[category] || '#64748B';
+
+    // Create lighter background tint
+    const bgMap: Record<string, string> = {
+      'Food & Drink': 'bg-amber-100',
+      Transport: 'bg-blue-100',
+      Entertainment: 'bg-pink-100',
+      Shopping: 'bg-violet-100',
+      Housing: 'bg-indigo-100',
+      Health: 'bg-cyan-100',
+      Education: 'bg-emerald-100',
+      Other: 'bg-slate-100',
+    };
+    const bg = bgMap[category] || 'bg-slate-100';
+
+    return { icon, color, bg };
   };
 
   return (
     <SafeAreaView style={tw`flex-1 bg-[#F8FAFC]`}>
       <StatusBar style="dark" />
-      
+
       {/* Header */}
       <View style={[tw`flex-row justify-between items-center px-5 pt-4 pb-3`, Platform.OS === 'android' && { paddingTop: 48 }]}>
         <Text style={tw`text-3xl font-bold text-slate-900`}>Transactions</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => setModalVisible(true)}
           style={tw`w-10 h-10 bg-green-100 rounded-full items-center justify-center`}
         >
@@ -111,23 +117,31 @@ export default function TransactionsScreen() {
             </Text>
             <View style={tw`bg-white rounded-3xl pt-2 pb-2 pl-3 pr-3 shadow-sm`}>
               {dayTransactions.map((tx, index) => {
-                const iconConf = getCategoryIcon(tx.category);
                 const isIncome = tx.type === 'income';
+                const conf = getCategoryConfig(tx.category);
                 return (
-                  <View 
-                    key={tx.id} 
+                  <View
+                    key={tx.id}
                     style={tw`flex-row items-center py-3 ${index !== dayTransactions.length - 1 ? 'border-b border-slate-50' : ''}`}
                   >
-                    <View style={tw`w-12 h-12 rounded-full items-center justify-center ${isIncome ? 'bg-green-100' : iconConf.bg}`}>
-                      <Ionicons name={isIncome ? 'trending-up-outline' : iconConf.name as any} size={20} color={isIncome ? '#16A34A' : iconConf.color} />
+                    <View style={tw`w-12 h-12 rounded-full items-center justify-center ${isIncome ? 'bg-green-100' : conf.bg}`}>
+                      <Ionicons
+                        name={(isIncome ? 'trending-up-outline' : conf.icon) as any}
+                        size={20}
+                        color={isIncome ? '#16A34A' : conf.color}
+                      />
                     </View>
-                    
+
                     <View style={tw`flex-1 ml-4 justify-center`}>
-                      <Text style={tw`text-[16px] font-semibold text-slate-900 pb-0.5`}>{tx.note || tx.category}</Text>
-                      <Text style={tw`text-[13px] text-slate-500`}>{isIncome ? 'Income' : tx.category}</Text>
+                      <Text style={tw`text-[16px] font-semibold text-slate-900 pb-0.5`}>
+                        {tx.note || tx.category}
+                      </Text>
+                      <Text style={tw`text-[13px] text-slate-500`}>
+                        {isIncome ? 'Income' : tx.category}
+                      </Text>
                     </View>
-                    
-                    <Text style={tw`text-[16px] font-bold ${isIncome ? 'text-[#16A34A]' : 'text-red-700'}`}>
+
+                    <Text style={tw`text-[16px] font-bold ${isIncome ? 'text-[#16A34A]' : 'text-red-600'}`}>
                       {isIncome ? '+' : '-'}৳{tx.amount.toFixed(2)}
                     </Text>
                   </View>
@@ -138,13 +152,13 @@ export default function TransactionsScreen() {
         ))}
         {groupedTransactions.length === 0 && (
           <View style={tw`items-center justify-center py-20`}>
-            <Text style={tw`text-slate-400`}>No transactions found.</Text>
+            <Text style={tw`text-slate-400 text-base`}>No transactions found.</Text>
           </View>
         )}
       </ScrollView>
 
       {/* Form Modal */}
-      <AppModal visible={modalVisible} onClose={() => setModalVisible(false)} title="New Transaction">
+      <AppModal visible={modalVisible} onClose={() => setModalVisible(false)} title="Add Transaction">
         <TransactionForm
           onSubmit={(data) => {
             addTransaction(data);
