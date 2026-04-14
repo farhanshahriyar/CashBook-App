@@ -11,11 +11,13 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../../contexts/FinanceContext';
+import { useUser } from '../../contexts/UserContext';
 import { BalanceCard } from '../../components/finance/BalanceCard';
 import { COLORS, CATEGORY_ICONS, CATEGORY_COLORS } from '../../lib/constants';
 
 export default function DashboardScreen() {
   const { balance, monthlyIncome, monthlyExpense, transactions, goals, loading } = useFinance();
+  const { profile } = useUser();
   const recentTransactions = transactions.slice(0, 5);
   const activeGoals = goals.slice(0, 3);
 
@@ -39,10 +41,12 @@ export default function DashboardScreen() {
             <View style={styles.headerTop}>
               <View>
                 <Text style={styles.welcomeText}>Welcome,</Text>
-                <Text style={styles.nameText}>Abir Shahriar Farhan 👋</Text>
+                <Text style={styles.nameText}>{profile?.fullName || 'Guest User'} 👋</Text>
               </View>
               <View style={styles.avatarContainer}>
-                <Text style={styles.avatarText}>A</Text>
+                <Text style={styles.avatarText}>
+                  {profile?.fullName ? profile.fullName.charAt(0).toUpperCase() : 'G'}
+                </Text>
               </View>
             </View>
 

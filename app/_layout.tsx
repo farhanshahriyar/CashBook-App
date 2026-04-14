@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
-import { Text, TextInput } from 'react-native';
-import { Stack } from 'expo-router';
+import { View, Text, TextInput } from 'react-native';
+import { Stack, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { FinanceProvider } from '../contexts/FinanceContext';
-import { AppLockProvider } from '../contexts/AppLockContext';
+import { AppLockProvider, useAppLock } from '../contexts/AppLockContext';
+import { UserProvider } from '../contexts/UserContext';
+import { LockScreen } from '../components/ui/LockScreen';
 import { COLORS } from '../lib/constants';
 import {
   useFonts,
@@ -73,6 +75,33 @@ function setDefaultFont() {
   }
 }
 
+function AppContent() {
+  const { isLocked } = useAppLock();
+  const segments = useSegments();
+  
+  // Don't show lock screen when on the splash screen (index) or onboarding
+  const isSplashRoot = segments.length === 0 || segments[0] === 'index';
+  const isOnboarding = segments[0] === 'onboarding';
+  
+  const showLock = isLocked && !isSplashRoot && !isOnboarding;
+
+  return (
+    <>
+      <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'fade' }} />
+        <Stack.Screen name="+not-found" />
+      </Stack>
+      {showLock && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999 }}>
+          <LockScreen />
+        </View>
+      )}
+    </>
+  );
+}
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     'Inter-Light': Inter_300Light,
@@ -98,13 +127,13 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AppLockProvider>
-        <FinanceProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="+not-found" />
-          </Stack>
-        </FinanceProvider>
+        <UserProvider>
+          <FinanceProvider>
+            <AppContent />
+          </FinanceProvider>
+        </UserProvider>
       </AppLockProvider>
     </SafeAreaProvider>
   );
 }
+

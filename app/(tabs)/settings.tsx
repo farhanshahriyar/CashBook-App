@@ -14,6 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppLock } from '../../contexts/AppLockContext';
 import { useFinance } from '../../contexts/FinanceContext';
+import { useUser } from '../../contexts/UserContext';
 import { COLORS } from '../../lib/constants';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -21,6 +22,7 @@ import * as Sharing from 'expo-sharing';
 export default function SettingsScreen() {
   const { isBiometricEnabled, setBiometricEnabled, isEnrolled } = useAppLock();
   const { balance, transactions, monthlyIncome, monthlyExpense } = useFinance();
+  const { profile } = useUser();
   const [exporting, setExporting] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
 
@@ -78,7 +80,7 @@ export default function SettingsScreen() {
         </head>
         <body>
           <div class="header-brand">CashBook</div>
-          <h1>Financial Report - Abir Shahriar Farhan</h1>
+          <h1>Financial Report - ${profile?.fullName || 'CashBook User'}</h1>
           <div class="date-gen">Generated on ${new Date().toLocaleDateString()}</div>
           
           <div class="summary-cards">
@@ -178,12 +180,14 @@ export default function SettingsScreen() {
         <View style={styles.profileCard}>
           <View style={styles.profileTop}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>A</Text>
+              <Text style={styles.avatarText}>
+                {profile?.fullName ? profile.fullName.charAt(0).toUpperCase() : 'G'}
+              </Text>
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>Abir Shahriar Farhan</Text>
-              <Text style={styles.profileSubtitle}>Software Engineer II</Text>
-              <Text style={styles.profileSubtitle2}>Service Professional</Text>
+              <Text style={styles.profileName}>{profile?.fullName || 'Guest User'}</Text>
+              <Text style={styles.profileSubtitle}>{profile?.designation || 'No designation'}</Text>
+              <Text style={styles.profileSubtitle2}>{profile?.occupation || 'No occupation'}</Text>
             </View>
             <TouchableOpacity style={styles.editBtn}>
               <Ionicons name="pencil" size={16} color={COLORS.textSecondary} />
