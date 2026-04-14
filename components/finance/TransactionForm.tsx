@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   },
   amountInput: {
     fontSize: 36,
-    fontWeight: '300',
+    fontWeight: 'bold',
     color: COLORS.text,
     minWidth: 80,
     textAlign: 'left',

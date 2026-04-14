@@ -3,18 +3,21 @@ import {
   View,
   StyleSheet,
   Text,
+  TextInput,
   Switch,
   ScrollView,
   SafeAreaView,
   TouchableOpacity,
   Alert,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppLock } from '../../contexts/AppLockContext';
 import { useFinance } from '../../contexts/FinanceContext';
 import { useUser } from '../../contexts/UserContext';
+import { useFont, FONT_OPTIONS, FontFamily } from '../../contexts/FontContext';
 import { COLORS } from '../../lib/constants';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -22,13 +25,46 @@ import * as Sharing from 'expo-sharing';
 export default function SettingsScreen() {
   const { isBiometricEnabled, setBiometricEnabled, isEnrolled } = useAppLock();
   const { balance, transactions, monthlyIncome, monthlyExpense } = useFinance();
-  const { profile } = useUser();
+  const { profile, saveProfile } = useUser();
+  const { selectedFont, setSelectedFont } = useFont();
   const [exporting, setExporting] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showFontPicker, setShowFontPicker] = useState(false);
+
+  // Edit profile form state
+  const [editName, setEditName] = useState('');
+  const [editDesignation, setEditDesignation] = useState('');
+  const [editOccupation, setEditOccupation] = useState('');
 
   // Use state for UI switches as placeholders matching screenshot
   const [pushEnabled, setPushEnabled] = useState(true);
   const [weeklyEnabled, setWeeklyEnabled] = useState(true);
+
+  const openEditProfile = () => {
+    setEditName(profile?.fullName || '');
+    setEditDesignation(profile?.designation || '');
+    setEditOccupation(profile?.occupation || '');
+    setShowEditProfile(true);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!editName.trim()) {
+      Alert.alert('Error', 'Full Name is required');
+      return;
+    }
+    await saveProfile({
+      fullName: editName.trim(),
+      designation: editDesignation.trim(),
+      occupation: editOccupation.trim(),
+    });
+    setShowEditProfile(false);
+  };
+
+  const handleFontSelect = async (font: FontFamily) => {
+    await setSelectedFont(font);
+    setShowFontPicker(false);
+  };
 
   // Derived stats
   const totalTransactions = transactions.length;
@@ -189,7 +225,7 @@ export default function SettingsScreen() {
               <Text style={styles.profileSubtitle}>{profile?.designation || 'No designation'}</Text>
               <Text style={styles.profileSubtitle2}>{profile?.occupation || 'No occupation'}</Text>
             </View>
-            <TouchableOpacity style={styles.editBtn}>
+            <TouchableOpacity style={styles.editBtn} onPress={openEditProfile}>
               <Ionicons name="pencil" size={16} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </View>
@@ -238,7 +274,13 @@ export default function SettingsScreen() {
             <View style={styles.rightValueBox}>
               <Text style={styles.rightValueText}>Monthly</Text>
               <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
-            </View>, undefined, true
+            </View>, undefined, false
+          )}
+          {renderRow('text-outline', '#EC4899', '#FCE7F3', 'Font', 
+            <View style={styles.rightValueBox}>
+              <Text style={styles.rightValueText}>{FONT_OPTIONS.find(f => f.key === selectedFont)?.label || 'Inter'}</Text>
+              <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+            </View>, () => setShowFontPicker(true), true
           )}
         </View>
 
@@ -334,6 +376,120 @@ export default function SettingsScreen() {
             <TouchableOpacity style={styles.modalButton} onPress={() => setShowChangelog(false)}>
               <Text style={styles.modalButtonText}>Got it</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Edit Profile Modal */}
+      {showEditProfile && (
+        <View style={StyleSheet.absoluteFill}>
+          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowEditProfile(false)} />
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={styles.modalContent}
+          >
+            <View style={styles.modalHeader}>
+              <View style={[styles.modalIconBox, { backgroundColor: '#DCFCE7' }]}>
+                <Ionicons name="person-outline" size={28} color={COLORS.primary} />
+              </View>
+              <View style={styles.modalTitleBox}>
+                <Text style={styles.modalTitle}>Edit Profile</Text>
+                <Text style={styles.modalSubtitle}>Update your personal information</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowEditProfile(false)}>
+                <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ marginBottom: 16 }}>
+              <Text style={styles.editLabel}>FULL NAME</Text>
+              <TextInput
+                style={styles.editInput}
+                value={editName}
+                onChangeText={setEditName}
+                placeholder="Enter your full name"
+                placeholderTextColor="#94A3B8"
+                autoCapitalize="words"
+              />
+            </View>
+
+            <View style={{ marginBottom: 16 }}>
+              <Text style={styles.editLabel}>DESIGNATION</Text>
+              <TextInput
+                style={styles.editInput}
+                value={editDesignation}
+                onChangeText={setEditDesignation}
+                placeholder="e.g. Software Engineer"
+                placeholderTextColor="#94A3B8"
+                autoCapitalize="words"
+              />
+            </View>
+
+            <View style={{ marginBottom: 24 }}>
+              <Text style={styles.editLabel}>OCCUPATION</Text>
+              <TextInput
+                style={styles.editInput}
+                value={editOccupation}
+                onChangeText={setEditOccupation}
+                placeholder="e.g. Full-time, Freelancer"
+                placeholderTextColor="#94A3B8"
+                autoCapitalize="words"
+              />
+            </View>
+
+            <TouchableOpacity style={[styles.modalButton, { backgroundColor: COLORS.primary }]} onPress={handleSaveProfile}>
+              <Text style={styles.modalButtonText}>Save Changes</Text>
+            </TouchableOpacity>
+          </KeyboardAvoidingView>
+        </View>
+      )}
+
+      {/* Font Picker Modal */}
+      {showFontPicker && (
+        <View style={StyleSheet.absoluteFill}>
+          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowFontPicker(false)} />
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View style={[styles.modalIconBox, { backgroundColor: '#FCE7F3' }]}>
+                <Ionicons name="text-outline" size={28} color="#EC4899" />
+              </View>
+              <View style={styles.modalTitleBox}>
+                <Text style={styles.modalTitle}>Choose Font</Text>
+                <Text style={styles.modalSubtitle}>Applied across the entire app</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowFontPicker(false)}>
+                <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {FONT_OPTIONS.map((font, index) => (
+              <TouchableOpacity
+                key={font.key}
+                style={[
+                  styles.fontRow,
+                  index < FONT_OPTIONS.length - 1 && { borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+                ]}
+                onPress={() => handleFontSelect(font.key)}
+                activeOpacity={0.7}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[
+                    styles.fontLabel,
+                    selectedFont === font.key && { color: COLORS.primary, fontWeight: '700' },
+                  ]}>
+                    {font.label}
+                  </Text>
+                  {selectedFont === font.key && (
+                    <Text style={{ fontSize: 12, color: COLORS.primary, marginTop: 2 }}>Currently active</Text>
+                  )}
+                </View>
+                {selectedFont === font.key && (
+                  <View style={styles.fontCheck}>
+                    <Ionicons name="checkmark" size={18} color="#fff" />
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
       )}
@@ -582,7 +738,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   modalButton: {
-    backgroundColor: '#3B82F6', // Blue as seen in screenshot
+    backgroundColor: '#3B82F6',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -591,5 +747,41 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: COLORS.white,
+  },
+  editLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+    letterSpacing: 0.8,
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  editInput: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: COLORS.text,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  fontRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  fontLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: COLORS.text,
+  },
+  fontCheck: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

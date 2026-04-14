@@ -115,23 +115,21 @@ export default function GoalsScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Total Summary Card */}
-          <View style={tw`bg-white rounded-3xl p-5 shadow-sm mb-6`}>
-            <Text style={tw`text-slate-500 text-sm mb-2 font-medium`}>Total Saved</Text>
-            <View style={tw`flex-row items-baseline mb-4`}>
-              <Text style={tw`text-4xl font-extrabold text-slate-900`}>৳{totalSaved.toFixed(0)}</Text>
-              <Text style={tw`text-lg text-slate-400 ml-2`}>/ ৳{totalTarget.toFixed(0)}</Text>
+          <View style={tw`bg-white rounded-[24px] p-6 shadow-sm mb-6 border border-slate-50`}>
+            <Text style={tw`text-slate-500 text-[15px] mb-2 font-medium`}>Total Saved</Text>
+            <View style={tw`flex-row items-baseline mb-5`}>
+              <Text style={tw`text-[38px] font-black text-slate-900 tracking-tight`}>৳{totalSaved.toFixed(0)}</Text>
+              <Text style={tw`text-xl text-slate-500 font-medium ml-2`}>/ ৳{totalTarget.toFixed(0)}</Text>
             </View>
-
-            <View style={tw`w-full bg-slate-100 h-3 rounded-full mb-3 overflow-hidden`}>
+            <View style={tw`w-full bg-[#f1f5f9] h-2.5 rounded-full mb-3 overflow-hidden`}>
               <View
                 style={[
-                  tw`h-full bg-[#16A34A] rounded-full`,
+                  tw`h-full bg-slate-800 rounded-full`,
                   { width: `${Math.min(totalTarget > 0 ? (totalSaved / totalTarget) * 100 : 0, 100)}%` },
                 ]}
               />
             </View>
-
-            <Text style={tw`text-slate-400 text-xs`}>
+            <Text style={tw`text-slate-500 text-[13.5px] font-medium`}>
               {totalTarget > 0 ? ((totalSaved / totalTarget) * 100).toFixed(0) : 0}% of all goals reached
             </Text>
           </View>
@@ -141,83 +139,76 @@ export default function GoalsScreen() {
             const progress = goal.targetAmount > 0 ? (goal.savedAmount / goal.targetAmount) * 100 : 0;
             const remaining = Math.max(goal.targetAmount - goal.savedAmount, 0);
 
-            const colors = ['bg-orange-100', 'bg-green-100', 'bg-red-100', 'bg-blue-100'];
-            const barColors = ['bg-orange-400', 'bg-[#16A34A]', 'bg-red-400', 'bg-blue-400'];
-            const textColors = ['text-orange-500', 'text-[#16A34A]', 'text-red-500', 'text-blue-500'];
-            const colorIdx = index % colors.length;
+            const themeStyles = [
+              { bg: 'bg-orange-50', text: 'text-orange-500', bar: 'bg-orange-500' },
+              { bg: 'bg-green-50', text: 'text-green-600', bar: 'bg-green-600' },
+              { bg: 'bg-rose-50', text: 'text-rose-500', bar: 'bg-rose-500' },
+              { bg: 'bg-blue-50', text: 'text-blue-500', bar: 'bg-blue-500' },
+            ];
+            const theme = themeStyles[index % themeStyles.length];
 
             return (
-              <View key={goal.id} style={tw`bg-white rounded-[28px] p-5 mb-5 border border-slate-100 shadow-sm`}>
+              <View key={goal.id} style={tw`bg-white rounded-[24px] p-5 mb-4 border border-slate-50 shadow-sm`}>
                 {/* Card Header */}
-                <View style={tw`flex-row items-start justify-between mb-6`}>
+                <View style={tw`flex-row items-start justify-between mb-5`}>
                   <View style={tw`flex-row items-center flex-1`}>
-                    <View style={tw`w-14 h-14 rounded-[18px] items-center justify-center ${colors[colorIdx]} shadow-sm`}>
-                      <Text style={tw`text-2xl`}>{goal.emoji || '🎯'}</Text>
+                    <View style={tw`w-12 h-12 rounded-full items-center justify-center ${theme.bg}`}>
+                      <Text style={tw`text-[22px]`}>{goal.emoji || '🎯'}</Text>
                     </View>
-                    <View style={tw`ml-4 flex-1`}>
-                      <Text style={tw`text-lg font-extrabold text-slate-900 mb-0.5`}>{goal.title}</Text>
-                      {remaining > 0 ? (
-                        <Text style={tw`text-sm font-semibold text-slate-500`}>
-                          ৳{remaining.toFixed(0)} remaining
-                        </Text>
-                      ) : (
-                        <Text style={tw`text-sm font-bold text-[#16A34A]`}>Goal Achieved! 🎉</Text>
-                      )}
+                    <View style={tw`ml-3 flex-1`}>
+                      <Text style={tw`text-[17px] font-bold text-slate-900 mb-[2px]`}>{goal.title}</Text>
+                      <Text style={tw`text-[13px] font-medium text-slate-500`}>Ongoing target</Text>
                     </View>
                   </View>
 
                   {/* Edit & Delete Actions */}
-                  <View style={tw`flex-row gap-2 ml-2 mt-1`}>
-                    <TouchableOpacity 
-                      onPress={() => openEdit(goal)}
-                      style={tw`w-9 h-9 rounded-full bg-slate-50 border border-slate-100 items-center justify-center`}
-                    >
-                      <Ionicons name="pencil" size={16} color="#64748B" />
+                  <View style={tw`flex-row gap-3 ml-2 pt-1`}>
+                    <TouchableOpacity onPress={() => openEdit(goal)}>
+                      <Ionicons name="pencil-outline" size={20} color="#94A3B8" />
                     </TouchableOpacity>
-                    <TouchableOpacity 
-                      onPress={() => removeGoal(goal.id)}
-                      style={tw`w-9 h-9 rounded-full bg-red-50 border border-red-100 items-center justify-center`}
-                    >
-                      <Ionicons name="trash" size={16} color="#EF4444" />
+                    <TouchableOpacity onPress={() => removeGoal(goal.id)}>
+                      <Ionicons name="trash-outline" size={20} color="#94A3B8" />
                     </TouchableOpacity>
                   </View>
                 </View>
 
                 {/* Progress Details */}
-                <View style={tw`flex-row justify-between items-end mb-2.5`}>
-                  <View>
-                    <Text style={tw`text-xs font-bold text-slate-400 uppercase tracking-wider mb-1`}>Progress</Text>
-                    <View style={tw`flex-row items-baseline`}>
-                      <Text style={tw`text-2xl font-black text-slate-800`}>৳{goal.savedAmount.toFixed(0)}</Text>
-                      <Text style={tw`text-sm font-bold text-slate-400 ml-1`}>/ ৳{goal.targetAmount.toFixed(0)}</Text>
-                    </View>
+                <View style={tw`flex-row justify-between items-baseline mb-3`}>
+                  <View style={tw`flex-row items-baseline`}>
+                    <Text style={tw`text-[24px] font-bold text-slate-900 tracking-tight`}>৳{goal.savedAmount.toFixed(0)}</Text>
+                    <Text style={tw`text-[15px] font-medium text-slate-400 ml-1.5`}>/ ৳{goal.targetAmount.toFixed(0)}</Text>
                   </View>
-                  <View style={tw`px-3 py-1.5 rounded-full ${colors[colorIdx]}`}>
-                    <Text style={tw`text-sm font-black ${textColors[colorIdx]}`}>{progress.toFixed(0)}%</Text>
-                  </View>
+                  <Text style={tw`text-[16px] font-extrabold ${theme.text}`}>{progress.toFixed(0)}%</Text>
                 </View>
 
                 {/* Progress Bar */}
-                <View style={tw`w-full bg-slate-100 h-3.5 rounded-full mb-5 overflow-hidden`}>
+                <View style={tw`w-full bg-[#f1f5f9] h-2.5 rounded-full mb-4 overflow-hidden`}>
                   <View
                     style={[
-                      tw`h-full rounded-full ${barColors[colorIdx]}`,
+                      tw`h-full rounded-full ${theme.bar}`,
                       { width: `${Math.min(progress, 100)}%` },
                     ]}
                   />
                 </View>
 
-                {/* Add Funds Button */}
-                {remaining > 0 && (
-                  <TouchableOpacity
-                    onPress={() => openContribute(goal)}
-                    style={tw`w-full flex-row items-center justify-center py-3.5 bg-[#F0FDF4] rounded-2xl border border-green-100`}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="add-circle" size={20} color="#16A34A" style={tw`mr-2`} />
-                    <Text style={tw`font-bold text-[15px] text-[#16A34A]`}>Add Funds</Text>
-                  </TouchableOpacity>
-                )}
+                {/* Footer */}
+                <View style={tw`flex-row justify-between items-center`}>
+                  <Text style={tw`text-[14px] text-slate-400 font-medium`}>
+                    ৳{remaining.toFixed(0)} to go
+                  </Text>
+                  {remaining > 0 ? (
+                    <TouchableOpacity
+                      onPress={() => openContribute(goal)}
+                      style={tw`px-4 py-2 rounded-full ${theme.bg}`}
+                    >
+                      <Text style={tw`font-bold text-[13.5px] ${theme.text}`}>+ Add Funds</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={tw`px-4 py-2 rounded-full bg-green-50`}>
+                      <Text style={tw`font-bold text-[13.5px] text-green-600`}>Goal Achieved</Text>
+                    </View>
+                  )}
+                </View>
               </View>
             );
           })}
