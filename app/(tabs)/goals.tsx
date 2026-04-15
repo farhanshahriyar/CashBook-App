@@ -51,7 +51,7 @@ export default function GoalsScreen() {
     setMode(ModalMode.NONE);
   };
 
-  const handleGoalSubmit = (data: { title: string; targetAmount: number; savedAmount: number; emoji: string }) => {
+  const handleGoalSubmit = (data: { title: string; targetAmount: number; savedAmount: number; emoji: string; color: string }) => {
     if (mode === ModalMode.EDIT && selectedGoal) {
       editGoal({ ...data, id: selectedGoal.id });
     } else {

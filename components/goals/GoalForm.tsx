@@ -53,7 +53,7 @@ export function GoalForm({ goal, onSubmit }: GoalFormProps) {
   const [targetAmount, setTargetAmount] = useState(goal?.targetAmount?.toString() ?? '');
   const [startingAmount, setStartingAmount] = useState(goal?.savedAmount?.toString() ?? '0');
   const [selectedDeadline, setSelectedDeadline] = useState(90);
-  const [selectedColor, setSelectedColor] = useState(GOAL_COLORS[0]);
+  const [selectedColor, setSelectedColor] = useState(goal?.color ?? GOAL_COLORS[0]);
 
   const isValid = title.trim().length > 0 && targetAmount && parseFloat(targetAmount) > 0;
 
@@ -73,6 +73,7 @@ export function GoalForm({ goal, onSubmit }: GoalFormProps) {
       targetAmount: parseFloat(targetAmount),
       savedAmount: parseFloat(startingAmount) || 0,
       emoji,
+      color: selectedColor,
     });
   };
 
