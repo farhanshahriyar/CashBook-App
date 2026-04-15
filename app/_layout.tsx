@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { View, Text, TextInput } from 'react-native';
+import { View, Text, TextInput, StyleSheet as RNStyleSheet } from 'react-native';
 import { Stack, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { FinanceProvider } from '../contexts/FinanceContext';
@@ -79,40 +79,49 @@ SplashScreen.preventAutoHideAsync();
 const originalTextRender = (Text as any).render;
 const originalInputRender = (TextInput as any).render;
 
+// This will hold the current weight map
+let currentWeightMap: Record<string, string> = FONT_WEIGHT_MAPS['Inter']; // default
+
+// Patched render function for Text
+const patchedTextRender = function (...args: any[]) {
+  const origin = originalTextRender.call(this, ...args);
+  const rawStyle = origin.props?.style;
+  const flat = RNStyleSheet.flatten(rawStyle) || {};
+  const weight = flat.fontWeight || '400';
+  const resolvedFont = currentWeightMap[weight] || currentWeightMap['400'];
+
+  return {
+    ...origin,
+    props: {
+      ...origin.props,
+      style: [{ fontFamily: resolvedFont }, rawStyle],
+    },
+  };
+};
+
+// Patched render function for TextInput
+const patchedInputRender = function (...args: any[]) {
+  const origin = originalInputRender.call(this, ...args);
+  const rawStyle = origin.props?.style;
+  const flat = RNStyleSheet.flatten(rawStyle) || {};
+  const weight = flat.fontWeight || '400';
+  const resolvedFont = currentWeightMap[weight] || currentWeightMap['400'];
+
+  return {
+    ...origin,
+    props: {
+      ...origin.props,
+      style: [{ fontFamily: resolvedFont }, rawStyle],
+    },
+  };
+};
+
+// Apply the patches once
+(Text as any).render = patchedTextRender;
+(TextInput as any).render = patchedInputRender;
+
 function applyGlobalFont(weightMap: Record<string, string>) {
-  if (originalTextRender) {
-    (Text as any).render = function (...args: any[]) {
-      const origin = originalTextRender.call(this, ...args);
-      const flatStyle = origin.props?.style;
-      const weight = flatStyle?.fontWeight || '400';
-      const resolvedFont = weightMap[weight] || weightMap['400'];
-
-      return {
-        ...origin,
-        props: {
-          ...origin.props,
-          style: [{ fontFamily: resolvedFont }, flatStyle],
-        },
-      };
-    };
-  }
-
-  if (originalInputRender) {
-    (TextInput as any).render = function (...args: any[]) {
-      const origin = originalInputRender.call(this, ...args);
-      const flatStyle = origin.props?.style;
-      const weight = flatStyle?.fontWeight || '400';
-      const resolvedFont = weightMap[weight] || weightMap['400'];
-
-      return {
-        ...origin,
-        props: {
-          ...origin.props,
-          style: [{ fontFamily: resolvedFont }, flatStyle],
-        },
-      };
-    };
-  }
+  currentWeightMap = weightMap;
 }
 
 function AppContent() {
@@ -120,13 +129,12 @@ function AppContent() {
   const { selectedFont } = useFont();
   const segments = useSegments();
 
-  // Re-apply global font whenever selectedFont changes
-  useEffect(() => {
-    const weightMap = FONT_WEIGHT_MAPS[selectedFont];
-    if (weightMap) {
-      applyGlobalFont(weightMap);
-    }
-  }, [selectedFont]);
+  // Update weight map synchronously during render so the key-forced remount
+  // picks up the new font immediately (useEffect runs AFTER render, too late)
+  const weightMap = FONT_WEIGHT_MAPS[selectedFont];
+  if (weightMap && currentWeightMap !== weightMap) {
+    currentWeightMap = weightMap;
+  }
 
   // Don't show lock screen when on the splash screen (index) or onboarding
   const isSplashRoot = segments.length === 0 || segments[0] === 'index';
@@ -209,8 +217,6 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded) {
-      // Apply Inter as default on first load
-      applyGlobalFont(FONT_WEIGHT_MAPS['Inter']);
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);

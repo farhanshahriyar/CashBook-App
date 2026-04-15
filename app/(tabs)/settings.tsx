@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppLock } from '../../contexts/AppLockContext';
 import { useFinance } from '../../contexts/FinanceContext';
 import { useUser } from '../../contexts/UserContext';
-import { useFont, FONT_OPTIONS, FontFamily } from '../../contexts/FontContext';
+import { useFont, FONT_OPTIONS, FONT_WEIGHT_MAPS, FontFamily } from '../../contexts/FontContext';
 import { COLORS } from '../../lib/constants';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -476,12 +476,13 @@ export default function SettingsScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={[
                     styles.fontLabel,
-                    selectedFont === font.key && { color: COLORS.primary, fontWeight: '700' },
+                    { fontFamily: FONT_WEIGHT_MAPS[font.key]?.['400'] || font.key },
+                    selectedFont === font.key && { color: COLORS.primary, fontWeight: '700', fontFamily: FONT_WEIGHT_MAPS[font.key]?.['700'] || font.key },
                   ]}>
                     {font.label}
                   </Text>
                   {selectedFont === font.key && (
-                    <Text style={{ fontSize: 12, color: COLORS.primary, marginTop: 2 }}>Currently active</Text>
+                    <Text style={{ fontSize: 12, color: COLORS.primary, marginTop: 2, fontFamily: FONT_WEIGHT_MAPS[font.key]?.['400'] || font.key }}>Currently active</Text>
                   )}
                 </View>
                 {selectedFont === font.key && (
@@ -775,7 +776,6 @@ const styles = StyleSheet.create({
   fontLabel: {
     fontSize: 16,
     fontWeight: '500',
-    color: COLORS.text,
   },
   fontCheck: {
     width: 28,

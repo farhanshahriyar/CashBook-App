@@ -24,7 +24,7 @@ export default function SplashScreen() {
         // AppLockContext handles biometric check globally inside _layout or on mount.
         router.replace('/(tabs)/dashboard');
       } else {
-        router.replace('/onboarding/profile');
+        router.replace('/onboarding/welcome');
       }
     }
   }, [timerDone, isLoading, hasCompletedOnboarding, router]);
