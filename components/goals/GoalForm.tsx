@@ -11,6 +11,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, GOAL_EMOJIS } from '../../lib/constants';
 import type { Goal } from '../../lib/db/queries';
 
+// Helper function to calculate a date that is X months in the future,
+// handling month-end dates by clamping to the last day of the month.
+function getSafeDeadlineDate(monthsToAdd: number): Date {
+  const date = new Date();
+  const targetMonth = date.getMonth() + monthsToAdd;
+  const targetYear = date.getFullYear() + Math.floor(targetMonth / 12);
+  const month = targetMonth % 12;
+  const lastDay = new Date(targetYear, month + 1, 0).getDate();
+  const day = Math.min(date.getDate(), lastDay);
+  return new Date(targetYear, month, day);
+}
+
 const DEADLINE_OPTIONS = [
   { label: '30 days', days: 30 },
   { label: '60 days', days: 60 },
@@ -32,7 +44,7 @@ const GOAL_COLORS = [
 
 interface GoalFormProps {
   goal?: Goal;
-  onSubmit: (data: { title: string; targetAmount: number; savedAmount: number; emoji: string }) => void;
+  onSubmit: (data: { title: string; targetAmount: number; savedAmount: number; emoji: string; color: string }) => void;
 }
 
 export function GoalForm({ goal, onSubmit }: GoalFormProps) {
@@ -45,9 +57,9 @@ export function GoalForm({ goal, onSubmit }: GoalFormProps) {
 
   const isValid = title.trim().length > 0 && targetAmount && parseFloat(targetAmount) > 0;
 
-  // Calculate target date based on deadline
-  const targetDate = new Date();
-  targetDate.setDate(targetDate.getDate() + selectedDeadline);
+  // Calculate target date based on deadline (convert days to months for month arithmetic)
+  const months = Math.round(selectedDeadline / 30);
+  const targetDate = getSafeDeadlineDate(months);
   const formattedDate = targetDate.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',

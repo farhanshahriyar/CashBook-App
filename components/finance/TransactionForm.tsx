@@ -37,7 +37,7 @@ export function TransactionForm({ transaction, onSubmit }: TransactionFormProps)
       type,
       amount: parseFloat(amount),
       category,
-      note: title.trim() || category,
+      note: title.trim() || '',
       date: transaction?.date ?? today,
     });
   };

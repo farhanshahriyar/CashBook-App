@@ -23,9 +23,19 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
         title TEXT NOT NULL,
         targetAmount REAL NOT NULL,
         savedAmount REAL NOT NULL DEFAULT 0,
-        emoji TEXT DEFAULT '🎯'
+        emoji TEXT DEFAULT '🎯',
+        color TEXT NOT NULL DEFAULT '#6C63FF'
       );
     `);
+    // Migration: add color column if it doesn't exist (for existing databases)
+    try {
+      await database.execAsync(`
+        ALTER TABLE goals ADD COLUMN color TEXT NOT NULL DEFAULT '#6C63FF';
+      `);
+    } catch (e) {
+      // Column likely already exists, ignore error
+      console.log('Color column already exists or migration failed:', e);
+    }
 
     return database;
   });

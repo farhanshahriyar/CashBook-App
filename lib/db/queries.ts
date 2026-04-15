@@ -15,6 +15,7 @@ export interface Goal {
   targetAmount: number;
   savedAmount: number;
   emoji: string;
+  color: string;
 }
 
 // ─── Transactions ───────────────────────────────────────
@@ -65,16 +66,16 @@ export async function insertGoal(goal: Omit<Goal, 'id'>): Promise<void> {
   const db = await getDatabase();
   const id = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
   await db.runAsync(
-    'INSERT INTO goals (id, title, targetAmount, savedAmount, emoji) VALUES (?, ?, ?, ?, ?)',
-    [id, goal.title, goal.targetAmount, goal.savedAmount, goal.emoji]
+    'INSERT INTO goals (id, title, targetAmount, savedAmount, emoji, color) VALUES (?, ?, ?, ?, ?, ?)',
+    [id, goal.title, goal.targetAmount, goal.savedAmount, goal.emoji, goal.color]
   );
 }
 
 export async function updateGoal(goal: Goal): Promise<void> {
   const db = await getDatabase();
   await db.runAsync(
-    'UPDATE goals SET title = ?, targetAmount = ?, savedAmount = ?, emoji = ? WHERE id = ?',
-    [goal.title, goal.targetAmount, goal.savedAmount, goal.emoji, goal.id]
+    'UPDATE goals SET title = ?, targetAmount = ?, savedAmount = ?, emoji = ?, color = ? WHERE id = ?',
+    [goal.title, goal.targetAmount, goal.savedAmount, goal.emoji, goal.color, goal.id]
   );
 }
 
