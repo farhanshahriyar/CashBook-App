@@ -94,7 +94,7 @@ export default function SettingsScreen() {
             .header-brand { font-size: 24px; font-weight: 700; color: #16a34a; margin-bottom: 4px; }
             h1 { font-size: 20px; font-weight: 500; margin-top: 0; margin-bottom: 8px; color: #334155; }
             .date-gen { font-size: 12px; color: #94a3b8; margin-bottom: 40px; }
-            
+            .footer { font-size: 12px; color: #94a3b8; margin-bottom: 40px; text-align: center; } 
             .summary-cards { display: flex; gap: 16px; margin-bottom: 32px; border-bottom: 1px solid #f1f5f9; padding-bottom: 32px; }
             .card { flex: 1; background: #ffffff; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); text-align: center; }
             .card-label { font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
@@ -146,6 +146,7 @@ export default function SettingsScreen() {
             </thead>
             <tbody>${rows || '<tr><td colspan="4" style="text-align: center; padding: 24px;">No transactions</td></tr>'}</tbody>
           </table>
+          <div class="footer">©copyright 2026 - CashBook App</div>
         </body>
         </html>
       `;
@@ -186,16 +187,16 @@ export default function SettingsScreen() {
   ) => {
     const Component = onPress ? TouchableOpacity : View;
     return (
-      <Component 
-        style={[styles.row, !hideBorder && styles.rowBorder]} 
-        onPress={onPress} 
+      <Component
+        style={[styles.row, !hideBorder && styles.rowBorder]}
+        onPress={onPress}
         activeOpacity={0.7}
       >
         <View style={styles.rowLeft}>
           <View style={[styles.iconBox, { backgroundColor: iconBgColor }]}>
             <Ionicons name={iconName} size={18} color={iconColor} />
           </View>
-          <Text style={[styles.rowLabel, label === 'Clear All Data' && {color: COLORS.expense}]}>
+          <Text style={[styles.rowLabel, label === 'Clear All Data' && { color: COLORS.expense }]}>
             {label}
           </Text>
         </View>
@@ -239,7 +240,7 @@ export default function SettingsScreen() {
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statColumn}>
-              <Text style={[styles.statValue, {color: COLORS.primary}]}>৳{savedAmount.toFixed(0)}</Text>
+              <Text style={[styles.statValue, { color: COLORS.primary }]}>৳{savedAmount.toFixed(0)}</Text>
               <Text style={styles.statLabel}>Saved</Text>
             </View>
             <View style={styles.statDivider} />
@@ -253,30 +254,30 @@ export default function SettingsScreen() {
         {/* Notifications */}
         {renderSectionHeader('NOTIFICATIONS')}
         <View style={styles.cardGroup}>
-          {renderRow('notifications-outline', '#8B5CF6', '#F3E8FF', 'Push Notifications', 
-            <Switch value={pushEnabled} onValueChange={setPushEnabled} trackColor={{true: COLORS.primary}} />, undefined, false
+          {renderRow('notifications-outline', '#8B5CF6', '#F3E8FF', 'Push Notifications',
+            <Switch value={pushEnabled} onValueChange={setPushEnabled} trackColor={{ true: COLORS.primary }} />, undefined, false
           )}
-          {renderRow('stats-chart-outline', COLORS.primary, '#DCFCE7', 'Weekly Report', 
-            <Switch value={weeklyEnabled} onValueChange={setWeeklyEnabled} trackColor={{true: COLORS.primary}} />, undefined, true
+          {renderRow('stats-chart-outline', COLORS.primary, '#DCFCE7', 'Weekly Report',
+            <Switch value={weeklyEnabled} onValueChange={setWeeklyEnabled} trackColor={{ true: COLORS.primary }} />, undefined, true
           )}
         </View>
 
         {/* Preferences */}
         {renderSectionHeader('PREFERENCES')}
         <View style={styles.cardGroup}>
-          {renderRow('logo-usd', '#F59E0B', '#FEF3C7', 'Currency', 
+          {renderRow('logo-usd', '#F59E0B', '#FEF3C7', 'Currency',
             <View style={styles.rightValueBox}>
               <Text style={styles.rightValueText}>৳ BDT</Text>
               <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
             </View>, undefined, false
           )}
-          {renderRow('calendar-outline', '#3B82F6', '#DBEAFE', 'Budget Period', 
+          {renderRow('calendar-outline', '#3B82F6', '#DBEAFE', 'Budget Period',
             <View style={styles.rightValueBox}>
               <Text style={styles.rightValueText}>Monthly</Text>
               <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
             </View>, undefined, false
           )}
-          {renderRow('text-outline', '#EC4899', '#FCE7F3', 'Font', 
+          {renderRow('text-outline', '#EC4899', '#FCE7F3', 'Font',
             <View style={styles.rightValueBox}>
               <Text style={styles.rightValueText}>{FONT_OPTIONS.find(f => f.key === selectedFont)?.label || 'Inter'}</Text>
               <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
@@ -287,10 +288,10 @@ export default function SettingsScreen() {
         {/* Security */}
         {renderSectionHeader('SECURITY')}
         <View style={styles.cardGroup}>
-          {renderRow('lock-closed-outline', '#64748B', '#F1F5F9', 'Biometric Lock', 
-            <Switch value={isBiometricEnabled} onValueChange={setBiometricEnabled} trackColor={{true: COLORS.primary}} />, undefined, false
+          {renderRow('lock-closed-outline', '#64748B', '#F1F5F9', 'Biometric Lock',
+            <Switch value={isBiometricEnabled} onValueChange={setBiometricEnabled} trackColor={{ true: COLORS.primary }} />, undefined, false
           )}
-          {renderRow('shield-checkmark-outline', '#64748B', '#F1F5F9', 'Privacy Policy', 
+          {renderRow('shield-checkmark-outline', '#64748B', '#F1F5F9', 'Privacy Policy',
             <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />, undefined, true
           )}
         </View>
@@ -298,13 +299,13 @@ export default function SettingsScreen() {
         {/* Data */}
         {renderSectionHeader('DATA')}
         <View style={styles.cardGroup}>
-          {renderRow('download-outline', COLORS.primary, '#DCFCE7', 'Export PDF', 
+          {renderRow('download-outline', COLORS.primary, '#DCFCE7', 'Export PDF',
             <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />, handleExportPDF, false
           )}
-          {renderRow('trash-outline', COLORS.expense, '#FEF2F2', 'Clear All Data', 
+          {renderRow('trash-outline', COLORS.expense, '#FEF2F2', 'Clear All Data',
             <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />, undefined, false
           )}
-          {renderRow('log-out-outline', COLORS.expense, '#FEF2F2', 'Sign Out', 
+          {renderRow('log-out-outline', COLORS.expense, '#FEF2F2', 'Sign Out',
             <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />, undefined, true
           )}
         </View>
@@ -312,10 +313,10 @@ export default function SettingsScreen() {
         {/* About */}
         {renderSectionHeader('ABOUT')}
         <View style={styles.cardGroup}>
-          {renderRow('information-circle-outline', '#64748B', '#F1F5F9', 'Changelog', 
+          {renderRow('information-circle-outline', '#64748B', '#F1F5F9', 'Changelog',
             <Text style={styles.rightValueText}>initial release 0.0.9</Text>, () => setShowChangelog(true), false
           )}
-          {renderRow('star-outline', '#F59E0B', '#FEF3C7', 'Rate the App', 
+          {renderRow('star-outline', '#F59E0B', '#FEF3C7', 'Rate the App',
             <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />, undefined, true
           )}
         </View>
@@ -331,7 +332,7 @@ export default function SettingsScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <View style={styles.modalIconBox}>
-                 <Ionicons name="layers-outline" size={32} color={COLORS.accent} />
+                <Ionicons name="layers-outline" size={32} color={COLORS.accent} />
               </View>
               <View style={styles.modalTitleBox}>
                 <Text style={styles.modalTitle}>What's New</Text>

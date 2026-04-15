@@ -13,14 +13,22 @@ import { useFinance } from '../../contexts/FinanceContext';
 import { AppModal } from '../../components/ui/Modal';
 import { TransactionForm } from '../../components/finance/TransactionForm';
 import { CATEGORY_COLORS, CATEGORY_ICONS, COLORS } from '../../lib/constants';
+import type { Transaction } from '../../lib/db/queries';
 import tw from '../../lib/tw';
 
 type FilterType = 'All' | 'Income' | 'Expense';
 
+enum ModalMode {
+  NONE,
+  CREATE,
+  EDIT,
+}
+
 export default function TransactionsScreen() {
-  const { transactions, addTransaction } = useFinance();
+  const { transactions, addTransaction, editTransaction, removeTransaction } = useFinance();
   const [filter, setFilter] = useState<FilterType>('All');
-  const [modalVisible, setModalVisible] = useState(false);
+  const [mode, setMode] = useState<ModalMode>(ModalMode.NONE);
+  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
 
   // Group transactions by date
   const groupedTransactions = useMemo(() => {
@@ -46,6 +54,30 @@ export default function TransactionsScreen() {
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
   const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
 
+  const openCreate = () => {
+    setSelectedTx(null);
+    setMode(ModalMode.CREATE);
+  };
+
+  const openEdit = (tx: Transaction) => {
+    setSelectedTx(tx);
+    setMode(ModalMode.EDIT);
+  };
+
+  const closeModal = () => {
+    setSelectedTx(null);
+    setMode(ModalMode.NONE);
+  };
+
+  const handleSubmit = (data: { type: 'income' | 'expense'; amount: number; category: string; note: string; date: string }) => {
+    if (mode === ModalMode.EDIT && selectedTx) {
+      editTransaction({ ...data, id: selectedTx.id });
+    } else {
+      addTransaction(data);
+    }
+    closeModal();
+  };
+
   const getCategoryConfig = (category: string) => {
     const icon = CATEGORY_ICONS[category] || 'ellipsis-horizontal-outline';
     const color = CATEGORY_COLORS[category] || '#64748B';
@@ -66,6 +98,8 @@ export default function TransactionsScreen() {
     return { icon, color, bg };
   };
 
+  const modalTitle = mode === ModalMode.CREATE ? 'Add Transaction' : 'Edit Transaction';
+
   return (
     <SafeAreaView style={tw`flex-1 bg-[#F8FAFC]`}>
       <StatusBar style="dark" />
@@ -74,7 +108,7 @@ export default function TransactionsScreen() {
       <View style={[tw`flex-row justify-between items-center px-5 pt-4 pb-3`, Platform.OS === 'android' && { paddingTop: 48 }]}>
         <Text style={tw`text-3xl font-bold text-slate-900`}>Transactions</Text>
         <TouchableOpacity
-          onPress={() => setModalVisible(true)}
+          onPress={openCreate}
           style={tw`w-10 h-10 bg-green-100 rounded-full items-center justify-center`}
         >
           <Ionicons name="add" size={24} color="#16A34A" />
@@ -141,6 +175,16 @@ export default function TransactionsScreen() {
                       </Text>
                     </View>
 
+                    {/* Edit & Delete Actions */}
+                    <View style={tw`flex-row items-center gap-3 mr-3`}>
+                      <TouchableOpacity onPress={() => openEdit(tx)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Ionicons name="pencil-outline" size={18} color="#94A3B8" />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => removeTransaction(tx.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Ionicons name="trash-outline" size={18} color="#94A3B8" />
+                      </TouchableOpacity>
+                    </View>
+
                     <Text style={tw`text-[16px] font-bold ${isIncome ? 'text-[#16A34A]' : 'text-red-600'}`}>
                       {isIncome ? '+' : '-'}৳{tx.amount.toFixed(2)}
                     </Text>
@@ -158,12 +202,10 @@ export default function TransactionsScreen() {
       </ScrollView>
 
       {/* Form Modal */}
-      <AppModal visible={modalVisible} onClose={() => setModalVisible(false)} title="Add Transaction">
+      <AppModal visible={mode !== ModalMode.NONE} onClose={closeModal} title={modalTitle}>
         <TransactionForm
-          onSubmit={(data) => {
-            addTransaction(data);
-            setModalVisible(false);
-          }}
+          transaction={mode === ModalMode.EDIT ? selectedTx ?? undefined : undefined}
+          onSubmit={handleSubmit}
         />
       </AppModal>
     </SafeAreaView>
