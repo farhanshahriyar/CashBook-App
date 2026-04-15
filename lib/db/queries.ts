@@ -140,3 +140,10 @@ function getMonthRange(monthKey: string): { start: string; end: string } {
   const end = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
   return { start, end };
 }
+
+// ─── Clear All Data ─────────────────────────────────────
+
+export async function clearAllData(): Promise<void> {
+  const db = await getDatabase();
+  await db.execAsync('DELETE FROM transactions; DELETE FROM goals;');
+}

@@ -13,6 +13,7 @@ interface UserContextType {
   isLoading: boolean;
   saveProfile: (profile: UserProfile) => Promise<void>;
   completeOnboarding: () => Promise<void>;
+  clearUserData: () => void;
 }
 
 const PROFILE_STORAGE_KEY = '@cashbook_user_profile';
@@ -68,6 +69,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const clearUserData = useCallback(() => {
+    setProfile(null);
+    setHasCompletedOnboarding(false);
+  }, []);
+
   return (
     <UserContext.Provider
       value={{
@@ -76,6 +82,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         saveProfile,
         completeOnboarding,
+        clearUserData,
       }}
     >
       {children}

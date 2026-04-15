@@ -1,26 +1,51 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, Image, TouchableOpacity, SafeAreaView, Dimensions, ScrollView, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import tw from '../../lib/tw';
 import { COLORS } from '../../lib/constants';
 
-const { height } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+
+const CAROUSEL_IMAGES = [
+  require('../../assets/carousel_image.jpg'),
+  require('../../assets/1.jpg'),
+  require('../../assets/2.jpg'),
+];
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const scrollPosition = event.nativeEvent.contentOffset.x;
+    const index = Math.round(scrollPosition / width);
+    setActiveIndex(index);
+  };
 
   return (
     <SafeAreaView style={tw`flex-1 bg-white`}>
       <StatusBar style="dark" />
       <View style={tw`flex-1 justify-between pb-8`}>
-        {/* Top Image Section */}
-        <View style={tw`items-center justify-center pt-10`}>
-          <Image
-            source={require('../../assets/carousel_image.jpg')}
-            style={[tw`w-full`, { height: height * 0.45 }]}
-            resizeMode="contain"
-          />
+        {/* Top Image Section (Swipeable Carousel) */}
+        <View style={tw`pt-10`}>
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+          >
+            {CAROUSEL_IMAGES.map((img, index) => (
+              <View key={index} style={[{ width }, tw`items-center justify-center`]}>
+                <Image
+                  source={img}
+                  style={[tw`w-full`, { height: height * 0.45 }]}
+                  resizeMode="contain"
+                />
+              </View>
+            ))}
+          </ScrollView>
         </View>
 
         {/* Text content */}
@@ -34,12 +59,15 @@ export default function WelcomeScreen() {
 
           {/* Carousel dots indicator */}
           <View style={tw`flex-row justify-center items-center mb-8 gap-2`}>
-            <View style={tw`w-2 h-2 rounded-full bg-[#16A34A]`} />
-            <View style={tw`w-2 h-2 rounded-full bg-slate-200`} />
-            <View style={tw`w-2 h-2 rounded-full bg-slate-200`} />
-            <View style={tw`w-2 h-2 rounded-full bg-slate-200`} />
-            <View style={tw`w-2 h-2 rounded-full bg-slate-200`} />
-            <View style={tw`w-2 h-2 rounded-full bg-slate-200`} />
+            {CAROUSEL_IMAGES.map((_, index) => (
+              <View 
+                key={index} 
+                style={[
+                  tw`w-2 h-2 rounded-full`, 
+                  activeIndex === index ? tw`bg-[#16A34A]` : tw`bg-slate-200`
+                ]} 
+              />
+            ))}
           </View>
         </View>
 

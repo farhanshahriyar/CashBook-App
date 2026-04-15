@@ -14,23 +14,56 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppLock } from '../../contexts/AppLockContext';
 import { useFinance } from '../../contexts/FinanceContext';
 import { useUser } from '../../contexts/UserContext';
 import { useFont, FONT_OPTIONS, FONT_WEIGHT_MAPS, FontFamily } from '../../contexts/FontContext';
 import { COLORS } from '../../lib/constants';
+import { clearAllData } from '../../lib/db/queries';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import tw from '../../lib/tw';
 
 export default function SettingsScreen() {
+  const router = useRouter();
   const { isBiometricEnabled, setBiometricEnabled, isEnrolled } = useAppLock();
-  const { balance, transactions, monthlyIncome, monthlyExpense } = useFinance();
-  const { profile, saveProfile } = useUser();
+  const { balance, transactions, monthlyIncome, monthlyExpense, refresh } = useFinance();
+  const { profile, saveProfile, clearUserData } = useUser();
   const { selectedFont, setSelectedFont } = useFont();
   const [exporting, setExporting] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showFontPicker, setShowFontPicker] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [clearing, setClearing] = useState(false);
+
+  const handleClearData = useCallback(async () => {
+    setClearing(true);
+    try {
+      // 1. Clear SQLite tables (transactions + goals)
+      await clearAllData();
+      await refresh(); // Sync FinanceContext state to empty DB
+
+      // 2. Clear all AsyncStorage keys (profile, onboarding, biometric, font)
+      await AsyncStorage.clear();
+      
+      // 3. Clear all in-memory contextual states
+      clearUserData(); 
+      await setBiometricEnabled(false);
+      // Reset font if needed (optional)
+      setSelectedFont('Inter'); 
+
+      // 4. Navigate back to welcome screen
+      setShowClearConfirm(false);
+      router.replace('/onboarding/welcome');
+    } catch (err) {
+      Alert.alert('Error', 'Could not clear data. Please try again.');
+    } finally {
+      setClearing(false);
+    }
+  }, [router, refresh, clearUserData, setBiometricEnabled, setSelectedFont]);
 
   // Edit profile form state
   const [editName, setEditName] = useState('');
@@ -277,12 +310,12 @@ export default function SettingsScreen() {
               <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
             </View>, undefined, false
           )}
-          {renderRow('text-outline', '#EC4899', '#FCE7F3', 'Font',
+          {/* {renderRow('text-outline', '#EC4899', '#FCE7F3', 'Font',
             <View style={styles.rightValueBox}>
               <Text style={styles.rightValueText}>{FONT_OPTIONS.find(f => f.key === selectedFont)?.label || 'Inter'}</Text>
               <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
             </View>, () => setShowFontPicker(true), true
-          )}
+          )} */}
         </View>
 
         {/* Security */}
@@ -303,11 +336,11 @@ export default function SettingsScreen() {
             <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />, handleExportPDF, false
           )}
           {renderRow('trash-outline', COLORS.expense, '#FEF2F2', 'Clear All Data',
-            <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />, undefined, false
+            <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />, () => setShowClearConfirm(true), false
           )}
-          {renderRow('log-out-outline', COLORS.expense, '#FEF2F2', 'Sign Out',
+          {/* {renderRow('log-out-outline', COLORS.expense, '#FEF2F2', 'Sign Out',
             <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />, undefined, true
-          )}
+          )} */}
         </View>
 
         {/* About */}
@@ -492,6 +525,61 @@ export default function SettingsScreen() {
                 )}
               </TouchableOpacity>
             ))}
+          </View>
+        </View>
+      )}
+
+      {/* Clear All Data Confirmation Modal */}
+      {showClearConfirm && (
+        <View style={StyleSheet.absoluteFill}>
+          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowClearConfirm(false)} />
+          <View style={tw`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl px-6 pt-8 pb-10 shadow-2xl`}>
+            {/* Warning Icon */}
+            <View style={tw`items-center mb-6`}>
+              <View style={tw`w-16 h-16 rounded-full bg-red-50 items-center justify-center mb-4`}>
+                <Ionicons name="warning-outline" size={32} color={COLORS.expense} />
+              </View>
+              <Text style={tw`text-xl font-bold text-slate-900 text-center mb-2`}>Delete All Data?</Text>
+              <Text style={tw`text-sm text-slate-500 text-center leading-relaxed px-4`}>
+                This will permanently erase all your transactions, goals, profile, and preferences. This action cannot be undone.
+              </Text>
+            </View>
+
+            {/* Summary of what gets deleted */}
+            <View style={tw`bg-red-50 rounded-2xl p-4 mb-6`}>
+              <View style={tw`flex-row items-center mb-3`}>
+                <Ionicons name="receipt-outline" size={18} color={COLORS.expense} />
+                <Text style={tw`text-sm text-slate-700 ml-3`}>{transactions.length} transaction{transactions.length !== 1 ? 's' : ''}</Text>
+              </View>
+              <View style={tw`flex-row items-center mb-3`}>
+                <Ionicons name="flag-outline" size={18} color={COLORS.expense} />
+                <Text style={tw`text-sm text-slate-700 ml-3`}>All saving goals</Text>
+              </View>
+              <View style={tw`flex-row items-center`}>
+                <Ionicons name="person-outline" size={18} color={COLORS.expense} />
+                <Text style={tw`text-sm text-slate-700 ml-3`}>Profile & preferences</Text>
+              </View>
+            </View>
+
+            {/* Action Buttons */}
+            <TouchableOpacity
+              style={tw`w-full bg-red-500 py-4 rounded-2xl mb-3`}
+              activeOpacity={0.8}
+              onPress={handleClearData}
+              disabled={clearing}
+            >
+              <Text style={tw`text-center text-white font-bold text-base`}>
+                {clearing ? 'Deleting...' : 'Yes, Delete Everything'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={tw`w-full bg-slate-100 py-4 rounded-2xl`}
+              activeOpacity={0.8}
+              onPress={() => setShowClearConfirm(false)}
+            >
+              <Text style={tw`text-center text-slate-700 font-bold text-base`}>Cancel</Text>
+            </TouchableOpacity>
           </View>
         </View>
       )}
