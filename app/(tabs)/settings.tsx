@@ -50,12 +50,12 @@ export default function SettingsScreen() {
 
       // 2. Clear all AsyncStorage keys (profile, onboarding, biometric, font)
       await AsyncStorage.clear();
-      
+
       // 3. Clear all in-memory contextual states
-      clearUserData(); 
+      clearUserData();
       await setBiometricEnabled(false);
       // Reset font if needed (optional)
-      setSelectedFont('Inter'); 
+      setSelectedFont('Inter');
 
       // 4. Navigate back to welcome screen
       setShowClearConfirm(false);
@@ -72,28 +72,28 @@ export default function SettingsScreen() {
   const [editDesignation, setEditDesignation] = useState('');
   const [editOccupation, setEditOccupation] = useState('');
 
+  // Toast state
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  }, []);
+
   // ── Notification toggle handlers ──────────────────────────────────────────
   const handlePushToggle = useCallback(async (value: boolean) => {
     await setPushEnabled(value);
     if (value && !hasPermission) {
-      Alert.alert(
-        'Enable Notifications',
-        'Please enable notifications for CashBook in your device Settings to receive daily reminders.',
-        [{ text: 'OK' }]
-      );
+      showToast('Please enable notifications for CashBook in your device Settings to receive daily reminders.');
     }
-  }, [setPushEnabled, hasPermission]);
+  }, [setPushEnabled, hasPermission, showToast]);
 
   const handleWeeklyToggle = useCallback(async (value: boolean) => {
     await setWeeklyEnabled(value);
     if (value && !hasPermission) {
-      Alert.alert(
-        'Enable Notifications',
-        'Please enable notifications for CashBook in your device Settings to receive weekly reports.',
-        [{ text: 'OK' }]
-      );
+      showToast('Please enable notifications for CashBook in your device Settings to receive weekly reports.');
     }
-  }, [setWeeklyEnabled, hasPermission]);
+  }, [setWeeklyEnabled, hasPermission, showToast]);
 
   const openEditProfile = () => {
     setEditName(profile?.fullName || '');
@@ -449,14 +449,14 @@ export default function SettingsScreen() {
                   <Text style={styles.featureDesc}>Generate and share beautiful financial HTML reports natively via iOS/Android.</Text>
                 </View>
               </View>
-
+              {/* 
               <View style={styles.featureItem}>
                 <Ionicons name="cloud-outline" size={24} color={'#06B6D4'} style={styles.featureIcon} />
                 <View style={styles.featureTextContainer}>
                   <Text style={styles.featureTitle}>Cloud Edge Sync</Text>
                   <Text style={styles.featureDesc}>Your data instantly syncs securely across all devices through our storage.</Text>
                 </View>
-              </View>
+              </View> */}
             </View>
 
             <TouchableOpacity style={styles.modalButton} onPress={() => setShowChangelog(false)}>
@@ -633,6 +633,16 @@ export default function SettingsScreen() {
               <Text style={tw`text-center text-slate-700 font-bold text-base`}>Cancel</Text>
             </TouchableOpacity>
           </View>
+        </View>
+      )}
+
+      {/* Tailwind CSS Toast */}
+      {toastMessage && (
+        <View style={tw`absolute bottom-10 left-5 right-5 bg-slate-800 rounded-xl px-4 py-3.5 shadow-xl flex-row items-center border border-slate-700 z-50`}>
+          <Ionicons name="information-circle" size={22} color="#38BDF8" />
+          <Text style={tw`text-white flex-1 flex-wrap text-[13.5px] ml-3 font-medium leading-relaxed`}>
+            {toastMessage}
+          </Text>
         </View>
       )}
     </SafeAreaView>
