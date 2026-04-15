@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, SafeAreaView, Dimensions, ScrollView, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -11,17 +11,30 @@ const CAROUSEL_IMAGES = [
   require('../../assets/carousel_image.jpg'),
   require('../../assets/1.jpg'),
   require('../../assets/2.jpg'),
+  require('../../assets/3.jpg'),
+  require('../../assets/4.jpg'),
+  require('../../assets/5.jpg'),
 ];
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const [activeIndex, setActiveIndex] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const scrollPosition = event.nativeEvent.contentOffset.x;
     const index = Math.round(scrollPosition / width);
     setActiveIndex(index);
   };
+
+  useEffect(() => {
+    let timer = setInterval(() => {
+      const nextIndex = (activeIndex + 1) % CAROUSEL_IMAGES.length;
+      scrollViewRef.current?.scrollTo({ x: nextIndex * width, animated: true });
+    }, 3000);
+
+    return () => clearInterval(timer);
+  }, [activeIndex]);
 
   return (
     <SafeAreaView style={tw`flex-1 bg-white`}>
@@ -30,6 +43,7 @@ export default function WelcomeScreen() {
         {/* Top Image Section (Swipeable Carousel) */}
         <View style={tw`pt-10`}>
           <ScrollView
+            ref={scrollViewRef}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
@@ -60,12 +74,12 @@ export default function WelcomeScreen() {
           {/* Carousel dots indicator */}
           <View style={tw`flex-row justify-center items-center mb-8 gap-2`}>
             {CAROUSEL_IMAGES.map((_, index) => (
-              <View 
-                key={index} 
+              <View
+                key={index}
                 style={[
-                  tw`w-2 h-2 rounded-full`, 
+                  tw`w-2 h-2 rounded-full`,
                   activeIndex === index ? tw`bg-[#16A34A]` : tw`bg-slate-200`
-                ]} 
+                ]}
               />
             ))}
           </View>
