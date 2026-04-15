@@ -6,12 +6,12 @@ import {
   TextInput,
   Switch,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Alert,
   Platform,
   KeyboardAvoidingView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -20,6 +20,7 @@ import { useAppLock } from '../../contexts/AppLockContext';
 import { useFinance } from '../../contexts/FinanceContext';
 import { useUser } from '../../contexts/UserContext';
 import { useFont, FONT_OPTIONS, FONT_WEIGHT_MAPS, FontFamily } from '../../contexts/FontContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 import { COLORS } from '../../lib/constants';
 import { clearAllData } from '../../lib/db/queries';
 import * as Print from 'expo-print';
@@ -32,6 +33,7 @@ export default function SettingsScreen() {
   const { balance, transactions, monthlyIncome, monthlyExpense, refresh } = useFinance();
   const { profile, saveProfile, clearUserData } = useUser();
   const { selectedFont, setSelectedFont } = useFont();
+  const { hasPermission, pushEnabled, setPushEnabled, weeklyEnabled, setWeeklyEnabled } = useNotifications();
   const [exporting, setExporting] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -70,9 +72,28 @@ export default function SettingsScreen() {
   const [editDesignation, setEditDesignation] = useState('');
   const [editOccupation, setEditOccupation] = useState('');
 
-  // Use state for UI switches as placeholders matching screenshot
-  const [pushEnabled, setPushEnabled] = useState(true);
-  const [weeklyEnabled, setWeeklyEnabled] = useState(true);
+  // ── Notification toggle handlers ──────────────────────────────────────────
+  const handlePushToggle = useCallback(async (value: boolean) => {
+    await setPushEnabled(value);
+    if (value && !hasPermission) {
+      Alert.alert(
+        'Enable Notifications',
+        'Please enable notifications for CashBook in your device Settings to receive daily reminders.',
+        [{ text: 'OK' }]
+      );
+    }
+  }, [setPushEnabled, hasPermission]);
+
+  const handleWeeklyToggle = useCallback(async (value: boolean) => {
+    await setWeeklyEnabled(value);
+    if (value && !hasPermission) {
+      Alert.alert(
+        'Enable Notifications',
+        'Please enable notifications for CashBook in your device Settings to receive weekly reports.',
+        [{ text: 'OK' }]
+      );
+    }
+  }, [setWeeklyEnabled, hasPermission]);
 
   const openEditProfile = () => {
     setEditName(profile?.fullName || '');
@@ -286,12 +307,43 @@ export default function SettingsScreen() {
 
         {/* Notifications */}
         {renderSectionHeader('NOTIFICATIONS')}
+
+        {/* Permission-denied banner */}
+        {!hasPermission && (
+          <View style={styles.permissionBanner}>
+            <View style={styles.permissionBannerIcon}>
+              <Ionicons name="alert-circle" size={18} color="#D97706" />
+            </View>
+            <Text style={styles.permissionBannerText}>
+              Notifications are disabled. Enable them in your{' '}
+              <Text style={styles.permissionBannerLink}>device Settings → CashBook</Text> to
+              receive reminders.
+            </Text>
+          </View>
+        )}
+
         <View style={styles.cardGroup}>
-          {renderRow('notifications-outline', '#8B5CF6', '#F3E8FF', 'Push Notifications',
-            <Switch value={pushEnabled} onValueChange={setPushEnabled} trackColor={{ true: COLORS.primary }} />, undefined, false
+          {renderRow(
+            'notifications-outline', '#8B5CF6', '#F3E8FF',
+            'Daily Reminder',
+            <Switch
+              value={pushEnabled}
+              onValueChange={handlePushToggle}
+              trackColor={{ false: '#E2E8F0', true: COLORS.primary }}
+              thumbColor={pushEnabled ? '#fff' : '#fff'}
+            />,
+            undefined, false
           )}
-          {renderRow('stats-chart-outline', COLORS.primary, '#DCFCE7', 'Weekly Report',
-            <Switch value={weeklyEnabled} onValueChange={setWeeklyEnabled} trackColor={{ true: COLORS.primary }} />, undefined, true
+          {renderRow(
+            'stats-chart-outline', COLORS.primary, '#DCFCE7',
+            'Weekly Report',
+            <Switch
+              value={weeklyEnabled}
+              onValueChange={handleWeeklyToggle}
+              trackColor={{ false: '#E2E8F0', true: COLORS.primary }}
+              thumbColor={weeklyEnabled ? '#fff' : '#fff'}
+            />,
+            undefined, true
           )}
         </View>
 
@@ -754,6 +806,31 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 32,
     marginBottom: 40,
+  },
+  permissionBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 8,
+  },
+  permissionBannerIcon: {
+    marginRight: 10,
+    marginTop: 1,
+  },
+  permissionBannerText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#92400E',
+    lineHeight: 19,
+  },
+  permissionBannerLink: {
+    fontWeight: '700',
+    color: '#B45309',
   },
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,

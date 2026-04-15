@@ -4,10 +4,10 @@ import {
   StyleSheet,
   Text,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../../contexts/FinanceContext';

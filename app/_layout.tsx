@@ -6,6 +6,7 @@ import { FinanceProvider } from '../contexts/FinanceContext';
 import { AppLockProvider, useAppLock } from '../contexts/AppLockContext';
 import { UserProvider } from '../contexts/UserContext';
 import { FontProvider, useFont, FONT_WEIGHT_MAPS } from '../contexts/FontContext';
+import { NotificationProvider } from '../contexts/NotificationContext';
 import { LockScreen } from '../components/ui/LockScreen';
 import { COLORS } from '../lib/constants';
 
@@ -228,13 +229,15 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AppLockProvider>
-        <FontProvider>
-          <UserProvider>
-            <FinanceProvider>
-              <AppContent />
-            </FinanceProvider>
-          </UserProvider>
-        </FontProvider>
+        <NotificationProvider>
+          <FontProvider>
+            <UserProvider>
+              <FinanceProvider>
+                <AppContent />
+              </FinanceProvider>
+            </UserProvider>
+          </FontProvider>
+        </NotificationProvider>
       </AppLockProvider>
     </SafeAreaProvider>
   );

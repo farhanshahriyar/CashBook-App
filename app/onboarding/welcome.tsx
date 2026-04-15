@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, SafeAreaView, Dimensions, ScrollView, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { View, Text, Image, TouchableOpacity, Dimensions, ScrollView, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import tw from '../../lib/tw';

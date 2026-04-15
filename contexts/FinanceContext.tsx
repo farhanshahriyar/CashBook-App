@@ -15,6 +15,10 @@ import {
   getMonthlyTotals,
 } from '../lib/db/queries';
 import { getMonthKey } from '../lib/format';
+import {
+  sendGoalMilestoneNotification,
+  sendBudgetAlertNotification,
+} from '../lib/notifications';
 
 interface FinanceState {
   transactions: Transaction[];
@@ -78,6 +82,22 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     async (tx: Omit<Transaction, 'id'>) => {
       await insertTransaction(tx);
       await refresh();
+
+      // ── Budget alert: fire when monthly expenses exceed 80% of income ───
+      if (tx.type === 'expense') {
+        try {
+          const monthTotals = await getMonthlyTotals(getMonthKey());
+          if (monthTotals.income > 0) {
+            const ratio = (monthTotals.expense / monthTotals.income) * 100;
+            // Alert at 80% — only once per crossing (check if previous ratio was below)
+            if (ratio >= 80 && ratio < 120) {
+              await sendBudgetAlertNotification(ratio);
+            }
+          }
+        } catch (_) {
+          // Notification errors must never crash finance operations
+        }
+      }
     },
     [refresh]
   );
@@ -124,8 +144,32 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
 
   const contributeGoal = useCallback(
     async (id: string, amount: number) => {
+      // Snapshot goal BEFORE contribution to detect milestone crossings
+      const goalsBefore = await getAllGoals();
+      const goalBefore = goalsBefore.find((g) => g.id === id);
+
       await contributeToGoal(id, amount);
       await refresh();
+
+      // ── Goal milestone notifications ────────────────────────────────────
+      if (goalBefore && goalBefore.targetAmount > 0) {
+        const goalsAfter = await getAllGoals();
+        const goalAfter = goalsAfter.find((g) => g.id === id);
+        if (goalAfter) {
+          const prevPct = (goalBefore.savedAmount / goalBefore.targetAmount) * 100;
+          const newPct = (goalAfter.savedAmount / goalAfter.targetAmount) * 100;
+
+          try {
+            if (newPct >= 100 && prevPct < 100) {
+              await sendGoalMilestoneNotification(goalAfter.title, 100);
+            } else if (newPct >= 50 && prevPct < 50) {
+              await sendGoalMilestoneNotification(goalAfter.title, 50);
+            }
+          } catch (_) {
+            // Notification errors must never crash finance operations
+          }
+        }
+      }
     },
     [refresh]
   );
