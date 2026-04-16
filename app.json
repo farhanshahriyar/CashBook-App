@@ -40,6 +40,12 @@
           "defaultChannel": "default"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1462fb73-975c-416b-ad7b-626192a8eac0"
+      }
+    }
   }
 }
