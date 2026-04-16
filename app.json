@@ -2,6 +2,7 @@
   "expo": {
     "name": "CashBook",
     "slug": "CashBook-v2",
+    "scheme": "cashbook",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -30,7 +31,15 @@
     "plugins": [
       "expo-router",
       "expo-sqlite",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#16A34A",
+          "defaultChannel": "default"
+        }
+      ]
     ]
   }
 }

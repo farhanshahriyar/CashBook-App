@@ -11,6 +11,7 @@ interface AppLockState {
   isBiometricEnabled: boolean;
   biometricType: BiometricTypeString;
   isEnrolled: boolean;
+  isReady: boolean;
 }
 
 interface AppLockContextType extends AppLockState {
@@ -29,24 +30,12 @@ function authTypeToString(type: LocalAuthentication.AuthenticationType): Biometr
 
 export function AppLockProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppLockState>({
-    isLocked: true,
+    isLocked: false, // Start unlocked — we'll lock if needed after checking
     isBiometricEnabled: false,
     biometricType: 'none',
     isEnrolled: false,
+    isReady: false,
   });
-
-  const checkEnrollment = useCallback(async () => {
-    const enrolled = await LocalAuthentication.isEnrolledAsync();
-    const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
-    const isEnrolled = enrolled && types.length > 0;
-    const biometricType = isEnrolled ? authTypeToString(types[0]) : 'none';
-    setState((prev) => ({
-      ...prev,
-      isEnrolled,
-      biometricType,
-      isLocked: false,
-    }));
-  }, []);
 
   const authenticate = useCallback(async (): Promise<boolean> => {
     const result = await LocalAuthentication.authenticateAsync({
@@ -63,30 +52,51 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     (async () => {
+      // 1. Check hardware & enrollment
+      const enrolled = await LocalAuthentication.isEnrolledAsync();
+      const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
+      const isEnrolled = enrolled && types.length > 0;
+      const biometricType = isEnrolled ? authTypeToString(types[0]) : 'none';
+
+      // 2. Check if user previously enabled biometric lock
       const stored = await AsyncStorage.getItem(LOCK_ENABLED_KEY);
-      const enabled = stored === 'true';
-      await checkEnrollment();
-      if (enabled && state.isEnrolled) {
+      const biometricEnabled = stored === 'true';
+
+      if (biometricEnabled && isEnrolled) {
+        // Lock the app and prompt for auth
+        setState({
+          isLocked: true,
+          isBiometricEnabled: true,
+          biometricType,
+          isEnrolled,
+          isReady: true,
+        });
+        // Auto-prompt authentication
         const result = await authenticate();
         if (!result) {
+          // Stay locked — user can tap "Unlock" button later
           setState((prev) => ({ ...prev, isLocked: true }));
         }
+      } else {
+        // No lock needed
+        setState({
+          isLocked: false,
+          isBiometricEnabled: biometricEnabled,
+          biometricType,
+          isEnrolled,
+          isReady: true,
+        });
       }
     })();
-  }, [checkEnrollment, authenticate]);
+  }, [authenticate]);
 
   const setBiometricEnabled = useCallback(async (enabled: boolean) => {
     await AsyncStorage.setItem(LOCK_ENABLED_KEY, String(enabled));
     setState((prev) => ({ ...prev, isBiometricEnabled: enabled }));
-    if (enabled && state.isEnrolled) {
-      const result = await authenticate();
-      if (!result) {
-        setState((prev) => ({ ...prev, isLocked: true }));
-      }
-    } else if (!enabled) {
+    if (!enabled) {
       setState((prev) => ({ ...prev, isLocked: false }));
     }
-  }, [authenticate, state.isEnrolled]);
+  }, []);
 
   return (
     <AppLockContext.Provider

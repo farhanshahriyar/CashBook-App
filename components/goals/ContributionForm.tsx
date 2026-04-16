@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, TextInput } from 'react-native';
 import { COLORS } from '../../lib/constants';
-import { formatCurrency } from '../../lib/format';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
 import type { Goal } from '../../lib/db/queries';
 
 interface ContributionFormProps {
@@ -14,8 +11,9 @@ interface ContributionFormProps {
 export function ContributionForm({ goal, onSubmit }: ContributionFormProps) {
   const [amount, setAmount] = useState('');
   const remaining = Math.max(goal.targetAmount - goal.savedAmount, 0);
+  const progress = goal.targetAmount > 0 ? (goal.savedAmount / goal.targetAmount) * 100 : 0;
 
-  const isValid = amount && parseFloat(amount) > 0;
+  const isValid = amount && parseFloat(amount) > 0 && parseFloat(amount) <= remaining;
 
   const handleSubmit = () => {
     if (!isValid) return;
@@ -23,63 +21,163 @@ export function ContributionForm({ goal, onSubmit }: ContributionFormProps) {
   };
 
   return (
-    <View>
+    <View style={styles.container}>
+      {/* Goal Summary Card */}
       <View style={styles.goalInfo}>
-        <Text style={styles.goalEmoji}>{goal.emoji}</Text>
-        <View>
-          <Text style={styles.goalTitle}>{goal.title}</Text>
-          <Text style={styles.goalProgress}>
-            {formatCurrency(goal.savedAmount)} / {formatCurrency(goal.targetAmount)}
-          </Text>
+        <View style={styles.goalHeaderRow}>
+          <View style={styles.goalEmojiContainer}>
+            <Text style={styles.goalEmoji}>{goal.emoji}</Text>
+          </View>
+          <View style={styles.goalTextContainer}>
+            <Text style={styles.goalTitle}>{goal.title}</Text>
+            <Text style={styles.goalProgressText}>
+              ৳{goal.savedAmount.toFixed(0)} saved of ৳{goal.targetAmount.toFixed(0)}
+            </Text>
+          </View>
         </View>
+        
+        {/* Progress Bar inside summary */}
+        <View style={styles.progressBarContainer}>
+          <View style={[styles.progressBarFill, { width: `${Math.min(progress, 100)}%` }]} />
+        </View>
+        <Text style={styles.remainingText}>৳{remaining.toFixed(0)} remaining to reach goal</Text>
       </View>
 
-      <Text style={styles.remaining}>{formatCurrency(remaining)} remaining</Text>
+      {/* Amount Input */}
+      <Text style={styles.fieldLabel}>CONTRIBUTION AMOUNT (BDT)</Text>
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.textInput}
+          value={amount}
+          onChangeText={setAmount}
+          placeholder="0"
+          placeholderTextColor={COLORS.textSecondary}
+          keyboardType="decimal-pad"
+          returnKeyType="done"
+        />
+      </View>
 
-      <Input
-        label="Amount"
-        placeholder="0.00"
-        value={amount}
-        onChangeText={setAmount}
-        keyboardType="decimal-pad"
-        returnKeyType="done"
-      />
-
-      <Button
-        title="Contribute"
+      {/* Submit Button */}
+      <TouchableOpacity
+        style={[
+          styles.submitButton,
+          !isValid && styles.submitButtonDisabled,
+        ]}
         onPress={handleSubmit}
         disabled={!isValid}
-      />
+        activeOpacity={0.8}
+      >
+        <Text style={styles.submitButtonText}>Add Funds</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 20,
+    paddingBottom: 32,
+  },
+  
+  // Goal Summary Card
   goalInfo: {
+    marginBottom: 24,
+    padding: 16,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  goalHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-    padding: 12,
-    backgroundColor: COLORS.background,
-    borderRadius: 12,
+    marginBottom: 16,
+  },
+  goalEmojiContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   goalEmoji: {
-    fontSize: 24,
-    marginRight: 12,
+    fontSize: 22,
+  },
+  goalTextContainer: {
+    marginLeft: 12,
+    flex: 1,
   },
   goalTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 4,
   },
-  goalProgress: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
+  goalProgressText: {
+    fontSize: 13,
+    color: '#64748B',
   },
-  remaining: {
-    fontSize: 14,
-    color: COLORS.accent,
+  progressBarContainer: {
+    height: 6,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 3,
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#16A34A',
+    borderRadius: 3,
+  },
+  remainingText: {
+    fontSize: 12,
     fontWeight: '500',
-    marginBottom: 16,
+    color: '#16A34A',
+    textAlign: 'right',
+  },
+
+  // Input Field
+  fieldLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+    letterSpacing: 1,
+    marginBottom: 10,
+  },
+  inputContainer: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    backgroundColor: COLORS.card,
+    marginBottom: 24,
+  },
+  textInput: {
+    fontSize: 18,
+    color: COLORS.text,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontWeight: '500',
+  },
+
+  // Submit Button
+  submitButton: {
+    backgroundColor: '#16A34A',
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+  },
+  submitButtonDisabled: {
+    opacity: 0.4,
+  },
+  submitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '700',
   },
 });

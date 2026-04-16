@@ -1,23 +1,34 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, ScrollView, TouchableOpacity } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+} from 'react-native';
 import { COLORS, TRANSACTION_CATEGORIES, CATEGORY_COLORS } from '../../lib/constants';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { Badge } from '../ui/Badge';
 import type { Transaction } from '../../lib/db/queries';
 
 interface TransactionFormProps {
   transaction?: Transaction;
-  onSubmit: (data: { type: 'income' | 'expense'; amount: number; category: string; note: string; date: string }) => void;
+  onSubmit: (data: {
+    type: 'income' | 'expense';
+    amount: number;
+    category: string;
+    note: string;
+    date: string;
+  }) => void;
 }
 
 export function TransactionForm({ transaction, onSubmit }: TransactionFormProps) {
   const [type, setType] = useState<'income' | 'expense'>(transaction?.type ?? 'expense');
   const [amount, setAmount] = useState(transaction?.amount?.toString() ?? '');
-  const [category, setCategory] = useState(transaction?.category ?? '');
-  const [note, setNote] = useState(transaction?.note ?? '');
-  const [date, setDate] = useState(transaction?.date ?? new Date().toISOString().split('T')[0]);
+  const [title, setTitle] = useState(transaction?.note ?? '');
+  const [category, setCategory] = useState(transaction?.category ?? TRANSACTION_CATEGORIES[0]);
+  const [note, setNote] = useState('');
 
+  const today = new Date().toISOString().split('T')[0];
   const isValid = amount && parseFloat(amount) > 0 && category;
 
   const handleSubmit = () => {
@@ -26,185 +37,318 @@ export function TransactionForm({ transaction, onSubmit }: TransactionFormProps)
       type,
       amount: parseFloat(amount),
       category,
-      note: note.trim(),
-      date,
+      note: title.trim() || '',
+      date: transaction?.date ?? today,
     });
   };
 
+  const displayAmount = amount ? parseFloat(amount).toFixed(2) : '0.00';
+
   return (
-    <ScrollView showsVerticalScrollIndicator={false} style={styles.container}>
-      {/* Type Toggle */}
-      <View style={styles.toggleRow}>
-        <View style={styles.toggleLabel}>
-          <Text style={styles.labelText}>Type</Text>
-        </View>
-        <View style={styles.toggleContainer}>
-          <View
+    <ScrollView
+      style={styles.scrollView}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+      bounces={false}
+      keyboardShouldPersistTaps="handled"
+    >
+      {/* Expense / Income Toggle */}
+      <View style={styles.toggleContainer}>
+        <TouchableOpacity
+          onPress={() => setType('expense')}
+          style={[
+            styles.toggleBtn,
+            styles.toggleBtnLeft,
+            type === 'expense' && styles.toggleBtnActiveExpense,
+          ]}
+          activeOpacity={0.7}
+        >
+          <Text
             style={[
-              styles.toggleOption,
-              type === 'expense' && styles.toggleOptionActiveExpense,
-              type === 'expense' && { backgroundColor: COLORS.expense, borderColor: COLORS.expense },
+              styles.toggleBtnText,
+              type === 'expense' && styles.toggleBtnTextActiveExpense,
             ]}
           >
-            <Text
-              style={[
-                styles.toggleText,
-                type === 'expense' && styles.toggleTextActive,
-              ]}
-            >
-              Expense
-            </Text>
-          </View>
-          <View
+            Expense
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setType('income')}
+          style={[
+            styles.toggleBtn,
+            styles.toggleBtnRight,
+            type === 'income' && styles.toggleBtnActiveIncome,
+          ]}
+          activeOpacity={0.7}
+        >
+          <Text
             style={[
-              styles.toggleOption,
-              type === 'income' && { backgroundColor: COLORS.income, borderColor: COLORS.income },
+              styles.toggleBtnText,
+              type === 'income' && styles.toggleBtnTextActiveIncome,
             ]}
           >
-            <Text
-              style={[
-                styles.toggleText,
-                type === 'income' && styles.toggleTextActive,
-              ]}
-            >
-              Income
-            </Text>
-          </View>
-          <View style={[styles.toggleSlider, type === 'income' ? styles.toggleSliderIncome : {}]} />
+            Income
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Amount Display */}
+      <View style={styles.amountSection}>
+        <View style={styles.amountRow}>
+          <Text style={[styles.currencySymbol, amount ? styles.currencySymbolActive : null]}>৳</Text>
+          <TextInput
+            style={[styles.amountInput, !amount && styles.amountPlaceholder]}
+            value={amount}
+            onChangeText={setAmount}
+            keyboardType="decimal-pad"
+            placeholder="0.00"
+            placeholderTextColor="#CBD5E1"
+            returnKeyType="done"
+            caretHidden={false}
+          />
         </View>
       </View>
 
-      {/* Amount */}
-      <Input
-        label="Amount"
-        placeholder="0.00"
-        value={amount}
-        onChangeText={setAmount}
-        keyboardType="decimal-pad"
-        returnKeyType="next"
-      />
+      {/* Divider */}
+      <View style={styles.divider} />
 
-      <View style={styles.categoryGrid}>
-        {TRANSACTION_CATEGORIES.map((cat) => {
-          const isSelected = category === cat;
-          return (
-            <TouchableOpacity
-              key={cat}
-              style={[
-                styles.categoryItem,
-                isSelected && {
-                  borderWidth: 2,
-                  borderColor: CATEGORY_COLORS[cat] || COLORS.accent,
-                  borderRadius: 20,
-                },
-              ]}
-              onPress={() => setCategory(cat)}
-            >
-              <Badge label={cat} type="category" />
-            </TouchableOpacity>
-          );
-        })}
+      {/* Title Field */}
+      <View style={styles.fieldSection}>
+        <Text style={styles.fieldLabel}>TITLE</Text>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.textInput}
+            value={title}
+            onChangeText={setTitle}
+            placeholder="What was this for?"
+            placeholderTextColor={COLORS.textSecondary}
+            returnKeyType="done"
+          />
+        </View>
       </View>
 
-      {/* Note */}
-      <Input
-        label="Note (optional)"
-        placeholder="What was this for?"
-        value={note}
-        onChangeText={setNote}
-        returnKeyType="next"
-        multiline
-      />
+      {/* Category Field */}
+      <View style={styles.fieldSection}>
+        <Text style={styles.fieldLabel}>CATEGORY</Text>
+        <View style={styles.categoryGrid}>
+          {TRANSACTION_CATEGORIES.map((cat) => {
+            const isSelected = category === cat;
+            const catColor = CATEGORY_COLORS[cat] || COLORS.textSecondary;
+            return (
+              <TouchableOpacity
+                key={cat}
+                onPress={() => setCategory(cat)}
+                style={[
+                  styles.categoryChip,
+                  isSelected && {
+                    borderColor: catColor,
+                    borderWidth: 2,
+                    backgroundColor: catColor + '10',
+                  },
+                ]}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.categoryChipText,
+                    isSelected && { color: catColor, fontWeight: '600' },
+                  ]}
+                >
+                  {cat}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
 
-      {/* Date */}
-      <Input
-        label="Date"
-        placeholder="YYYY-MM-DD"
-        value={date}
-        onChangeText={setDate}
-        returnKeyType="done"
-      />
+      {/* Note Field */}
+      <View style={styles.fieldSection}>
+        <Text style={styles.fieldLabel}>NOTE (OPTIONAL)</Text>
+        <View style={[styles.inputContainer, styles.noteContainer]}>
+          <TextInput
+            style={[styles.textInput, styles.noteInput]}
+            value={note}
+            onChangeText={setNote}
+            placeholder="Add a note..."
+            placeholderTextColor={COLORS.textSecondary}
+            multiline
+            numberOfLines={3}
+            textAlignVertical="top"
+          />
+        </View>
+      </View>
 
-      <Button
-        title={transaction ? 'Update Transaction' : 'Add Transaction'}
+      {/* Submit Button */}
+      <TouchableOpacity
+        style={[
+          styles.submitButton,
+          !isValid && styles.submitButtonDisabled,
+        ]}
         onPress={handleSubmit}
         disabled={!isValid}
-        variant="primary"
-      />
+        activeOpacity={0.8}
+      >
+        <Text style={styles.submitButtonText}>
+          {transaction
+            ? 'Update Transaction'
+            : type === 'expense'
+              ? 'Add Expense'
+              : 'Add Income'}
+        </Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
   },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 32,
   },
-  toggleLabel: {
-    flex: 1,
-  },
-  labelText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.text,
-    marginBottom: 6,
-  },
+
+  // Toggle
   toggleContainer: {
     flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    overflow: 'hidden',
-    position: 'relative',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 28,
+    padding: 4,
+    marginBottom: 24,
   },
-  toggleSlider: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '50%',
-    height: '100%',
-  },
-  toggleSliderIncome: {
-    left: '50%',
-  },
-  toggleOption: {
+  toggleBtn: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 12,
     alignItems: 'center',
+    borderRadius: 24,
   },
-  toggleOptionActiveExpense: {
-    zIndex: 1,
+  toggleBtnLeft: {},
+  toggleBtnRight: {},
+  toggleBtnActiveExpense: {
+    backgroundColor: '#FEE2E2',
   },
-  toggleText: {
-    fontSize: 14,
+  toggleBtnActiveIncome: {
+    backgroundColor: '#DCFCE7',
+  },
+  toggleBtnText: {
+    fontSize: 15,
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
-  toggleTextActive: {
-    color: '#FFFFFF',
+  toggleBtnTextActiveExpense: {
+    color: '#EF4444',
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
+  toggleBtnTextActiveIncome: {
+    color: '#16A34A',
+  },
+
+  // Amount
+  amountSection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 28,
+    marginBottom: 4,
+  },
+  amountRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+  },
+  currencySymbol: {
+    fontSize: 26,
+    fontWeight: '400',
+    color: '#CBD5E1',
+    marginRight: 8,
+  },
+  currencySymbolActive: {
+    color: '#94A3B8',
+  },
+  amountInput: {
+    fontSize: 36,
+    fontWeight: 'bold',
     color: COLORS.text,
-    marginBottom: 6,
+    minWidth: 80,
+    textAlign: 'left',
+    padding: 0,
+    includeFontPadding: false,
   },
+  amountPlaceholder: {
+    color: '#CBD5E1',
+  },
+
+  // Divider
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginBottom: 20,
+  },
+
+  // Fields
+  fieldSection: {
+    marginBottom: 20,
+  },
+  fieldLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+    letterSpacing: 1,
+    marginBottom: 10,
+  },
+  inputContainer: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    backgroundColor: COLORS.card,
+  },
+  textInput: {
+    fontSize: 15,
+    color: COLORS.text,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  noteContainer: {
+    minHeight: 90,
+  },
+  noteInput: {
+    minHeight: 80,
+  },
+
+  // Categories
   categoryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 16,
     gap: 8,
   },
   categoryChip: {
-    marginBottom: 4,
-  },
-  categoryItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 20,
+    backgroundColor: COLORS.card,
+  },
+  categoryChipText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+  },
+
+  // Submit
+  submitButton: {
+    backgroundColor: '#16A34A',
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  submitButtonDisabled: {
+    opacity: 0.4,
+  },
+  submitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '700',
   },
 });

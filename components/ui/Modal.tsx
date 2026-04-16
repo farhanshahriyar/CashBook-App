@@ -5,10 +5,10 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  TouchableWithoutFeedback,
-  KeyboardAvoidingView,
+  SafeAreaView,
   Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../lib/constants';
 
 interface AppModalProps {
@@ -22,55 +22,44 @@ export function AppModal({ visible, onClose, title, children }: AppModalProps) {
   return (
     <RNModal
       visible={visible}
-      transparent
       animationType="slide"
+      presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.overlay}>
-          <TouchableWithoutFeedback>
-            <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-              style={styles.keyboardView}
-            >
-              <View style={styles.content}>
-                <View style={styles.header}>
-                  <Text style={styles.title}>{title}</Text>
-                  <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                    <Text style={styles.closeText}>Close</Text>
-                  </TouchableOpacity>
-                </View>
-                {children}
-              </View>
-            </KeyboardAvoidingView>
-          </TouchableWithoutFeedback>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={[styles.header, Platform.OS === 'android' && { paddingTop: 16 }]}>
+            <Text style={styles.title}>{title}</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Ionicons name="close" size={24} color={COLORS.text} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Body */}
+          <View style={styles.body}>
+            {children}
+          </View>
         </View>
-      </TouchableWithoutFeedback>
+      </SafeAreaView>
     </RNModal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  safeArea: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: COLORS.background,
   },
-  keyboardView: {
-    width: '100%',
-  },
-  content: {
-    backgroundColor: COLORS.card,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
+  container: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   title: {
     fontSize: 20,
@@ -78,12 +67,12 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   closeButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  closeText: {
-    fontSize: 16,
-    color: COLORS.accent,
-    fontWeight: '500',
+  body: {
+    flex: 1,
   },
 });

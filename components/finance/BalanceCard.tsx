@@ -1,91 +1,111 @@
 import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../lib/constants';
 import { formatCurrency } from '../../lib/format';
-import { Card } from '../ui/Card';
 
 interface BalanceCardProps {
   balance: number;
   monthlyIncome: number;
   monthlyExpense: number;
-  monthLabel: string;
+  monthLabel?: string;
 }
 
-export function BalanceCard({ balance, monthlyIncome, monthlyExpense, monthLabel }: BalanceCardProps) {
+export function BalanceCard({ balance, monthlyIncome, monthlyExpense }: BalanceCardProps) {
   return (
-    <Card style={styles.card}>
+    <View style={styles.container}>
       <Text style={styles.label}>Total Balance</Text>
-      <Text style={[styles.balance, { color: balance >= 0 ? COLORS.income : COLORS.expense }]}>
+      <Text style={styles.balance}>
         {formatCurrency(balance)}
       </Text>
+      
       <View style={styles.row}>
-        <View style={styles.column}>
-          <Text style={[styles.subLabel, styles.incomeLabel]}>Income</Text>
-          <Text style={styles.subValue}>{formatCurrency(monthlyIncome)}</Text>
+        {/* Income Card */}
+        <View style={styles.statsCard}>
+          <View style={styles.iconContainer}>
+            <Ionicons name="arrow-down-outline" size={16} color={COLORS.white} />
+          </View>
+          <View style={styles.statsTextContainer}>
+            <Text style={styles.subLabel}>Income</Text>
+            <Text style={styles.subValue}>{formatCurrency(monthlyIncome)}</Text>
+          </View>
         </View>
-        <View style={styles.divider} />
-        <View style={styles.column}>
-          <Text style={[styles.subLabel, styles.expenseLabel]}>Expenses</Text>
-          <Text style={styles.subValue}>{formatCurrency(monthlyExpense)}</Text>
+
+        <View style={styles.separator} />
+
+        {/* Expenses Card */}
+        <View style={styles.statsCard}>
+          <View style={styles.iconContainer}>
+            <Ionicons name="arrow-up-outline" size={16} color={COLORS.white} />
+          </View>
+          <View style={styles.statsTextContainer}>
+            <Text style={styles.subLabel}>Expenses</Text>
+            <Text style={styles.subValue}>{formatCurrency(monthlyExpense)}</Text>
+          </View>
         </View>
       </View>
-      <Text style={styles.monthLabel}>{monthLabel}</Text>
-    </Card>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
+  container: {
+    alignItems: 'center',
+    paddingVertical: 16,
   },
   label: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
     fontWeight: '500',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   balance: {
-    fontSize: 36,
-    fontWeight: '700',
-    marginBottom: 20,
-    letterSpacing: -0.5,
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: COLORS.white,
+    marginBottom: 32,
+    letterSpacing: -1,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.overlay,
+    borderRadius: 20,
+    width: '100%',
   },
-  column: {
+  statsCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  iconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  statsTextContainer: {
     flex: 1,
   },
+  separator: {
+    width: 1,
+    height: 40,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
   subLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  incomeLabel: {
-    color: COLORS.income,
-  },
-  expenseLabel: {
-    color: COLORS.expense,
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '500',
+    marginBottom: 2,
   },
   subValue: {
     fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  divider: {
-    width: 1,
-    height: 32,
-    backgroundColor: COLORS.border,
-    marginHorizontal: 16,
-  },
-  monthLabel: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginTop: 12,
-    textAlign: 'center',
+    fontWeight: 'bold',
+    color: COLORS.white,
   },
 });
