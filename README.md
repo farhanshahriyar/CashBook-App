@@ -91,5 +91,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ---
 
 <p align="center">
-  Built by Farhan Shahriyar
+  Built by <a href="https://github.com/farhanshahriyar"> Farhan Shahriyar </a>
 </p>

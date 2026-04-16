@@ -175,7 +175,7 @@ export default function TransactionsScreen() {
 
                     <View style={tw`flex-1 ml-4 justify-center`}>
                       <Text style={tw`text-[16px] font-semibold text-slate-900 pb-0.5`}>
-                        {tx.note || tx.category}
+                        {tx.note?.split('\n')[0] || tx.category}
                       </Text>
                       <Text style={tw`text-[13px] text-slate-500`}>
                         {isIncome ? 'Income' : tx.category}

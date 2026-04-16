@@ -156,7 +156,7 @@ export default function DashboardScreen() {
                       </View>
                       <View style={styles.txInfo}>
                         <Text style={styles.txTitle} numberOfLines={1}>
-                          {tx.note || tx.category}
+                          {tx.note?.split('\n')[0] || tx.category}
                         </Text>
                         <Text style={styles.txCategory}>
                           {isIncome ? 'Income' : tx.category}

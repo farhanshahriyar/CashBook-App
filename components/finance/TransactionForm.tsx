@@ -24,20 +24,25 @@ interface TransactionFormProps {
 export function TransactionForm({ transaction, onSubmit }: TransactionFormProps) {
   const [type, setType] = useState<'income' | 'expense'>(transaction?.type ?? 'expense');
   const [amount, setAmount] = useState(transaction?.amount?.toString() ?? '');
-  const [title, setTitle] = useState(transaction?.note ?? '');
+  const [title, setTitle] = useState(transaction?.note?.split('\n')[0] ?? '');
   const [category, setCategory] = useState(transaction?.category ?? TRANSACTION_CATEGORIES[0]);
-  const [note, setNote] = useState('');
+  const [note, setNote] = useState(transaction?.note?.split('\n').slice(1).join('\n') ?? '');
 
   const today = new Date().toISOString().split('T')[0];
   const isValid = amount && parseFloat(amount) > 0 && category;
 
   const handleSubmit = () => {
     if (!isValid) return;
+    
+    // Combine title and optional note using a newline delimiter
+    // to store both fields in the single 'note' DB column
+    const finalNote = [title.trim(), note.trim()].filter(Boolean).join('\n');
+
     onSubmit({
       type,
       amount: parseFloat(amount),
       category,
-      note: title.trim() || '',
+      note: finalNote,
       date: transaction?.date ?? today,
     });
   };
