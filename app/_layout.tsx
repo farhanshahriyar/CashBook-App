@@ -84,7 +84,7 @@ const originalInputRender = (TextInput as any).render;
 let currentWeightMap: Record<string, string> = FONT_WEIGHT_MAPS['Inter']; // default
 
 // Patched render function for Text
-const patchedTextRender = function (...args: any[]) {
+const patchedTextRender = function (this: any, ...args: any[]) {
   const origin = originalTextRender.call(this, ...args);
   const rawStyle = origin.props?.style;
   const flat = RNStyleSheet.flatten(rawStyle) || {};
@@ -101,7 +101,7 @@ const patchedTextRender = function (...args: any[]) {
 };
 
 // Patched render function for TextInput
-const patchedInputRender = function (...args: any[]) {
+const patchedInputRender = function (this: any, ...args: any[]) {
   const origin = originalInputRender.call(this, ...args);
   const rawStyle = origin.props?.style;
   const flat = RNStyleSheet.flatten(rawStyle) || {};
@@ -138,7 +138,7 @@ function AppContent() {
   }
 
   // Don't show lock screen when on the splash screen (index) or onboarding
-  const isSplashRoot = segments.length === 0 || segments[0] === 'index';
+  const isSplashRoot = (segments as string[]).length === 0 || segments[0] === 'index';
   const isOnboarding = segments[0] === 'onboarding';
 
   const showLock = isLocked && !isSplashRoot && !isOnboarding;

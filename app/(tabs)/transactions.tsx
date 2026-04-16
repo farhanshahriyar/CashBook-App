@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../../contexts/FinanceContext';
 import { AppModal } from '../../components/ui/Modal';
 import { TransactionForm } from '../../components/finance/TransactionForm';
+import { TransactionDetails } from '../../components/finance/TransactionDetails';
 import { CATEGORY_COLORS, CATEGORY_ICONS, COLORS } from '../../lib/constants';
 import type { Transaction } from '../../lib/db/queries';
 import tw from '../../lib/tw';
@@ -22,6 +23,7 @@ enum ModalMode {
   NONE,
   CREATE,
   EDIT,
+  VIEW,
 }
 
 export default function TransactionsScreen() {
@@ -98,7 +100,7 @@ export default function TransactionsScreen() {
     return { icon, color, bg };
   };
 
-  const modalTitle = mode === ModalMode.CREATE ? 'Add Transaction' : 'Edit Transaction';
+  const modalTitle = mode === ModalMode.CREATE ? 'Add Transaction' : mode === ModalMode.EDIT ? 'Edit Transaction' : 'Transaction Details';
 
   return (
     <SafeAreaView style={tw`flex-1 bg-[#F8FAFC]`}>
@@ -154,8 +156,13 @@ export default function TransactionsScreen() {
                 const isIncome = tx.type === 'income';
                 const conf = getCategoryConfig(tx.category);
                 return (
-                  <View
+                  <TouchableOpacity
                     key={tx.id}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      setSelectedTx(tx);
+                      setMode(ModalMode.VIEW);
+                    }}
                     style={tw`flex-row items-center py-3 ${index !== dayTransactions.length - 1 ? 'border-b border-slate-50' : ''}`}
                   >
                     <View style={tw`w-12 h-12 rounded-full items-center justify-center ${isIncome ? 'bg-green-100' : conf.bg}`}>
@@ -177,10 +184,10 @@ export default function TransactionsScreen() {
 
                     {/* Edit & Delete Actions */}
                     <View style={tw`flex-row items-center gap-3 mr-3`}>
-                      <TouchableOpacity onPress={() => openEdit(tx)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <TouchableOpacity onPress={() => openEdit(tx)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                         <Ionicons name="pencil-outline" size={18} color="#94A3B8" />
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => removeTransaction(tx.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <TouchableOpacity onPress={() => removeTransaction(tx.id)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                         <Ionicons name="trash-outline" size={18} color="#94A3B8" />
                       </TouchableOpacity>
                     </View>
@@ -188,7 +195,7 @@ export default function TransactionsScreen() {
                     <Text style={tw`text-[16px] font-bold ${isIncome ? 'text-[#16A34A]' : 'text-red-600'}`}>
                       {isIncome ? '+' : '-'}৳{tx.amount.toFixed(2)}
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
             </View>
@@ -201,12 +208,16 @@ export default function TransactionsScreen() {
         )}
       </ScrollView>
 
-      {/* Form Modal */}
+      {/* Modal */}
       <AppModal visible={mode !== ModalMode.NONE} onClose={closeModal} title={modalTitle}>
-        <TransactionForm
-          transaction={mode === ModalMode.EDIT ? selectedTx ?? undefined : undefined}
-          onSubmit={handleSubmit}
-        />
+        {mode === ModalMode.VIEW && selectedTx ? (
+          <TransactionDetails tx={selectedTx} />
+        ) : (
+          <TransactionForm
+            transaction={mode === ModalMode.EDIT ? selectedTx ?? undefined : undefined}
+            onSubmit={handleSubmit}
+          />
+        )}
       </AppModal>
     </SafeAreaView>
   );

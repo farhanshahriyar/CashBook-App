@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -13,13 +13,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../../contexts/FinanceContext';
 import { useUser } from '../../contexts/UserContext';
 import { BalanceCard } from '../../components/finance/BalanceCard';
+import { AppModal } from '../../components/ui/Modal';
+import { TransactionDetails } from '../../components/finance/TransactionDetails';
 import { COLORS, CATEGORY_ICONS, CATEGORY_COLORS } from '../../lib/constants';
+import type { Transaction } from '../../lib/db/queries';
 
 export default function DashboardScreen() {
   const { balance, monthlyIncome, monthlyExpense, transactions, goals, loading } = useFinance();
   const { profile } = useUser();
   const recentTransactions = transactions.slice(0, 5);
   const activeGoals = goals.slice(0, 3);
+  const [viewTx, setViewTx] = useState<Transaction | null>(null);
 
   if (loading) {
     return (
@@ -144,7 +148,7 @@ export default function DashboardScreen() {
                 const iconBg = isIncome ? '#DCFCE7' : '#F8FAFC';
 
                 return (
-                  <React.Fragment key={tx.id}>
+                  <TouchableOpacity key={tx.id} activeOpacity={0.7} onPress={() => setViewTx(tx)}>
                     {index > 0 && <View style={styles.txDivider} />}
                     <View style={styles.txRow}>
                       <View style={[styles.txIcon, { backgroundColor: iconBg }]}>
@@ -162,7 +166,7 @@ export default function DashboardScreen() {
                         {isIncome ? '+' : '-'}৳{tx.amount.toFixed(2)}
                       </Text>
                     </View>
-                  </React.Fragment>
+                  </TouchableOpacity>
                 );
               })}
             </View>
@@ -172,6 +176,11 @@ export default function DashboardScreen() {
           <View style={{ height: 100 }} />
         </View>
       </ScrollView>
+
+      {/* View Modal */}
+      <AppModal visible={!!viewTx} onClose={() => setViewTx(null)} title="Transaction Details">
+        {viewTx && <TransactionDetails tx={viewTx} />}
+      </AppModal>
     </View>
   );
 }

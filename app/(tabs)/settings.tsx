@@ -39,6 +39,7 @@ export default function SettingsScreen() {
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showFontPicker, setShowFontPicker] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [clearing, setClearing] = useState(false);
 
   const handleClearData = useCallback(async () => {
@@ -377,7 +378,7 @@ export default function SettingsScreen() {
             <Switch value={isBiometricEnabled} onValueChange={setBiometricEnabled} trackColor={{ true: COLORS.primary }} />, undefined, false
           )}
           {renderRow('shield-checkmark-outline', '#64748B', '#F1F5F9', 'Privacy Policy',
-            <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />, undefined, true
+            <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />, () => setShowPrivacyPolicy(true), true
           )}
         </View>
 
@@ -461,6 +462,50 @@ export default function SettingsScreen() {
 
             <TouchableOpacity style={styles.modalButton} onPress={() => setShowChangelog(false)}>
               <Text style={styles.modalButtonText}>Got it</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Privacy Policy Modal */}
+      {showPrivacyPolicy && (
+        <View style={StyleSheet.absoluteFill}>
+          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowPrivacyPolicy(false)} />
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View style={[styles.modalIconBox, { backgroundColor: '#F1F5F9' }]}>
+                <Ionicons name="shield-checkmark-outline" size={28} color="#64748B" />
+              </View>
+              <View style={styles.modalTitleBox}>
+                <Text style={styles.modalTitle}>Privacy Policy</Text>
+                <Text style={styles.modalSubtitle}>How we handle your data</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowPrivacyPolicy(false)}>
+                <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 400, marginBottom: 24 }} showsVerticalScrollIndicator={false}>
+              <Text style={{ fontSize: 14, color: COLORS.text, lineHeight: 22, marginBottom: 12 }}>
+                <Text style={{ fontWeight: 'bold' }}>1. Data Storage: </Text>
+                All your financial data, including transactions and goals, are securely stored locally on your device using SQLite. We do not transmit or store your financial data on external servers.
+              </Text>
+              <Text style={{ fontSize: 14, color: COLORS.text, lineHeight: 22, marginBottom: 12 }}>
+                <Text style={{ fontWeight: 'bold' }}>2. Biometric Authentication: </Text>
+                If enabled, we use your device's native FaceID or TouchID hardware to protect your data. Your biometric data never leaves your device and is not accessible to CashBook.
+              </Text>
+              <Text style={{ fontSize: 14, color: COLORS.text, lineHeight: 22, marginBottom: 12 }}>
+                <Text style={{ fontWeight: 'bold' }}>3. Export features: </Text>
+                When you choose to export your data as a PDF, the file is generated locally. You have full control over where to share or save the generated file.
+              </Text>
+              <Text style={{ fontSize: 14, color: COLORS.text, lineHeight: 22 }}>
+                <Text style={{ fontWeight: 'bold' }}>4. Analytics: </Text>
+                We do not integrate any third-party analytics trackers that monitor your specific financial inputs or behavior within the app.
+              </Text>
+            </ScrollView>
+
+            <TouchableOpacity style={styles.modalButton} onPress={() => setShowPrivacyPolicy(false)}>
+              <Text style={styles.modalButtonText}>I Understand</Text>
             </TouchableOpacity>
           </View>
         </View>
