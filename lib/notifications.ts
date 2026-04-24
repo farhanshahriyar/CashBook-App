@@ -177,6 +177,9 @@ export async function sendGoalMilestoneNotification(
 export async function sendBudgetAlertNotification(percent: number): Promise<void> {
   if (!N) return;
 
+  // ── Threshold: only notify if expenses are >= 80% of income ───
+  if (percent < 80) return;
+
   // ── Throttle: skip if already fired within the last 24 hours ─────────────
   const lastSentStr = await AsyncStorage.getItem(BUDGET_ALERT_LAST_KEY);
   if (lastSentStr) {

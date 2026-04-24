@@ -89,10 +89,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
           const monthTotals = await getMonthlyTotals(getMonthKey());
           if (monthTotals.income > 0) {
             const ratio = (monthTotals.expense / monthTotals.income) * 100;
-            // Alert at 80% — only once per crossing (check if previous ratio was below)
-            if (ratio >= 80 && ratio < 120) {
-              await sendBudgetAlertNotification(ratio);
-            }
+            await sendBudgetAlertNotification(ratio);
           }
         } catch (_) {
           // Notification errors must never crash finance operations

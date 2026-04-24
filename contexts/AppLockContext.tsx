@@ -91,12 +91,20 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
   }, [authenticate]);
 
   const setBiometricEnabled = useCallback(async (enabled: boolean) => {
+    if (enabled && !state.isEnrolled) {
+      Alert.alert(
+        'Biometrics Not Set Up',
+        'Please enroll your fingerprints or face in your device settings to enable this feature.'
+      );
+      return;
+    }
+
     await AsyncStorage.setItem(LOCK_ENABLED_KEY, String(enabled));
     setState((prev) => ({ ...prev, isBiometricEnabled: enabled }));
     if (!enabled) {
       setState((prev) => ({ ...prev, isLocked: false }));
     }
-  }, []);
+  }, [state.isEnrolled]);
 
   return (
     <AppLockContext.Provider

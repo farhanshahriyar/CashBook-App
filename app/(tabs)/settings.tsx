@@ -454,7 +454,7 @@ export default function SettingsScreen() {
         {renderSectionHeader('SECURITY')}
         <View style={styles.cardGroup}>
           {renderRow('lock-closed-outline', '#64748B', '#F1F5F9', 'Biometric Lock',
-            <Switch value={isBiometricEnabled} onValueChange={setBiometricEnabled} trackColor={{ true: COLORS.primary }} />, undefined, false
+            <Switch value={isBiometricEnabled} onValueChange={setBiometricEnabled} trackColor={{ true: COLORS.primary }} disabled={!isEnrolled} />, undefined, false
           )}
           {renderRow('shield-checkmark-outline', '#64748B', '#F1F5F9', 'Privacy Policy',
             <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />, () => setShowPrivacyPolicy(true), true

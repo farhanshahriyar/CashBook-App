@@ -5,6 +5,7 @@ import React, {
   useState,
   useCallback,
 } from 'react';
+import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   requestNotificationPermission,
@@ -71,43 +72,63 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
       setLoaded(true);
     })();
+
+    // Listen for app returning to foreground to refresh permissions
+    const subscription = AppState.addEventListener('change', async (nextAppState) => {
+      if (nextAppState === 'active') {
+        const currentPerm = await hasNotificationPermission();
+        setHasPermission(currentPerm);
+
+        // If permissions were just granted, schedule reminders if they are enabled
+        if (currentPerm) {
+          const [pushPref, weeklyPref] = await Promise.all([
+            AsyncStorage.getItem(PUSH_PREF_KEY),
+            AsyncStorage.getItem(WEEKLY_PREF_KEY),
+          ]);
+          if (pushPref === 'true') await scheduleDailyReminder();
+          if (weeklyPref === 'true') await scheduleWeeklyReport();
+        }
+      }
+    });
+
+    return () => subscription.remove();
   }, []);
 
   // ── Toggle daily reminder ─────────────────────────────────────────────────
   const setPushEnabled = useCallback(async (value: boolean) => {
+    _setPushEnabled(value);
+    await AsyncStorage.setItem(PUSH_PREF_KEY, String(value));
+
     // If turning on, make sure we have permission
     if (value) {
       const currentPerm = await hasNotificationPermission();
       if (!currentPerm) {
         const granted = await requestNotificationPermission();
         setHasPermission(granted);
-        if (!granted) return; // user denied — bail out silently
+        if (!granted) return; // user denied — bail out silently, but state remains enabled
       }
       await scheduleDailyReminder();
     } else {
       await cancelDailyReminder();
     }
-
-    _setPushEnabled(value);
-    await AsyncStorage.setItem(PUSH_PREF_KEY, String(value));
   }, []);
 
   // ── Toggle weekly report ──────────────────────────────────────────────────
   const setWeeklyEnabled = useCallback(async (value: boolean) => {
+    _setWeeklyEnabled(value);
+    await AsyncStorage.setItem(WEEKLY_PREF_KEY, String(value));
+
     if (value) {
       const currentPerm = await hasNotificationPermission();
       if (!currentPerm) {
         const granted = await requestNotificationPermission();
         setHasPermission(granted);
-        if (!granted) return;
+        if (!granted) return; // user denied — bail out silently, but state remains enabled
       }
       await scheduleWeeklyReport();
     } else {
       await cancelWeeklyReport();
     }
-
-    _setWeeklyEnabled(value);
-    await AsyncStorage.setItem(WEEKLY_PREF_KEY, String(value));
   }, []);
 
   if (!loaded) return <>{children}</>;
