@@ -5,7 +5,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -207,7 +206,6 @@ const styles = StyleSheet.create({
   // Header — UNTOUCHED
   headerBackground: {
     backgroundColor: COLORS.primary,
-    paddingTop: Platform.OS === 'android' ? 40 : 0,
     paddingBottom: 24,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,

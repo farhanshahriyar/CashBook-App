@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -78,7 +77,7 @@ export default function GoalsScreen() {
       <StatusBar style="dark" />
 
       {/* Header */}
-      <View style={[tw`px-5 pt-4 pb-1`, Platform.OS === 'android' && { paddingTop: 48 }]}>
+      <View style={tw`px-5 pt-4 pb-1`}>
         <View style={tw`flex-row justify-between items-center`}>
           <Text style={tw`text-3xl font-bold text-slate-900`}>Saving Goals</Text>
           <TouchableOpacity

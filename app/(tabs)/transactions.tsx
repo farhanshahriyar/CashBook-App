@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -107,7 +106,7 @@ export default function TransactionsScreen() {
       <StatusBar style="dark" />
 
       {/* Header */}
-      <View style={[tw`flex-row justify-between items-center px-5 pt-4 pb-3`, Platform.OS === 'android' && { paddingTop: 48 }]}>
+      <View style={tw`flex-row justify-between items-center px-5 pt-4 pb-3`}>
         <Text style={tw`text-3xl font-bold text-slate-900`}>Transactions</Text>
         <TouchableOpacity
           onPress={openCreate}
