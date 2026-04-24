@@ -141,6 +141,32 @@ function getMonthRange(monthKey: string): { start: string; end: string } {
   return { start, end };
 }
 
+// ─── Bulk Insert (for backup restore) ───────────────────
+
+export async function bulkInsertTransactions(txs: Transaction[]): Promise<void> {
+  if (txs.length === 0) return;
+  const db = await getDatabase();
+  const statements = txs
+    .map(
+      (tx) =>
+        `INSERT OR REPLACE INTO transactions (id, type, amount, category, note, date) VALUES ('${tx.id.replace(/'/g, "''")}', '${tx.type}', ${tx.amount}, '${tx.category.replace(/'/g, "''")}', '${(tx.note || '').replace(/'/g, "''")}', '${tx.date}')`
+    )
+    .join(';\n');
+  await db.execAsync(statements);
+}
+
+export async function bulkInsertGoals(goals: Goal[]): Promise<void> {
+  if (goals.length === 0) return;
+  const db = await getDatabase();
+  const statements = goals
+    .map(
+      (g) =>
+        `INSERT OR REPLACE INTO goals (id, title, targetAmount, savedAmount, emoji, color) VALUES ('${g.id.replace(/'/g, "''")}', '${g.title.replace(/'/g, "''")}', ${g.targetAmount}, ${g.savedAmount}, '${g.emoji.replace(/'/g, "''")}', '${g.color}')`
+    )
+    .join(';\n');
+  await db.execAsync(statements);
+}
+
 // ─── Clear All Data ─────────────────────────────────────
 
 export async function clearAllData(): Promise<void> {

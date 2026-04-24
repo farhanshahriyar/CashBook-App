@@ -23,8 +23,10 @@ import { useFont, FONT_OPTIONS, FONT_WEIGHT_MAPS, FontFamily } from '../../conte
 import { useNotifications } from '../../contexts/NotificationContext';
 import { COLORS } from '../../lib/constants';
 import { clearAllData } from '../../lib/db/queries';
+import { exportBackup, validateBackup, importBackup, readBackupFile, CashBookBackup } from '../../lib/backup';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as DocumentPicker from 'expo-document-picker';
 import tw from '../../lib/tw';
 
 export default function SettingsScreen() {
@@ -41,6 +43,10 @@ export default function SettingsScreen() {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [backingUp, setBackingUp] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [showImportConfirm, setShowImportConfirm] = useState(false);
+  const [pendingBackup, setPendingBackup] = useState<CashBookBackup | null>(null);
 
   const handleClearData = useCallback(async () => {
     setClearing(true);
@@ -227,6 +233,79 @@ export default function SettingsScreen() {
     }
   }, [transactions, balance, monthlyIncome, monthlyExpense]);
 
+  // ── Backup Export ─────────────────────────────────────────────────────────
+  const handleExportBackup = useCallback(async () => {
+    setBackingUp(true);
+    try {
+      const fileUri = await exportBackup();
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/json',
+          dialogTitle: 'Save CashBook Backup',
+          UTI: 'public.json',
+        });
+      } else {
+        Alert.alert('Sharing Unavailable', 'Sharing is not available on this device.');
+      }
+    } catch (err) {
+      console.error('Export backup error:', err);
+      Alert.alert('Export Failed', 'Could not create backup. Please try again.');
+    } finally {
+      setBackingUp(false);
+    }
+  }, []);
+
+  // ── Backup Import ─────────────────────────────────────────────────────────
+  const handlePickImportFile = useCallback(async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/json',
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) return;
+
+      const asset = result.assets[0];
+
+      let parsed: unknown;
+      try {
+        parsed = await readBackupFile(asset.uri);
+      } catch {
+        Alert.alert('Invalid File', 'The selected file is not valid JSON.');
+        return;
+      }
+
+      const backup = validateBackup(parsed);
+      setPendingBackup(backup);
+      setShowImportConfirm(true);
+    } catch (err: any) {
+      Alert.alert('Import Error', err?.message || 'Could not read the backup file.');
+    }
+  }, []);
+
+  const handleConfirmImport = useCallback(async () => {
+    if (!pendingBackup) return;
+    setImporting(true);
+    try {
+      await importBackup(pendingBackup);
+      await refresh();
+
+      // Reload user profile into context
+      if (pendingBackup.data.preferences.userProfile) {
+        await saveProfile(pendingBackup.data.preferences.userProfile);
+      }
+
+      setShowImportConfirm(false);
+      setPendingBackup(null);
+      showToast('Backup restored successfully! 🎉');
+    } catch (err) {
+      console.error('Import backup error:', err);
+      Alert.alert('Restore Failed', 'Could not restore backup. Please try again.');
+    } finally {
+      setImporting(false);
+    }
+  }, [pendingBackup, refresh, saveProfile, showToast]);
+
   const renderSectionHeader = (title: string) => (
     <Text style={styles.sectionTitle}>{title}</Text>
   );
@@ -382,18 +461,28 @@ export default function SettingsScreen() {
           )}
         </View>
 
-        {/* Data */}
-        {renderSectionHeader('DATA')}
+        {/* Data Management */}
+        {renderSectionHeader('DATA MANAGEMENT')}
         <View style={styles.cardGroup}>
-          {renderRow('download-outline', COLORS.primary, '#DCFCE7', 'Export PDF',
-            <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />, handleExportPDF, false
+          {renderRow('cloud-upload-outline', COLORS.primary, '#DCFCE7', 'Export Backup',
+            backingUp
+              ? <Text style={styles.rightValueText}>Exporting…</Text>
+              : <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />,
+            backingUp ? undefined : handleExportBackup, false
+          )}
+          {renderRow('cloud-download-outline', '#3B82F6', '#DBEAFE', 'Import Backup',
+            <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />,
+            handlePickImportFile, false
+          )}
+          {renderRow('download-outline', '#8B5CF6', '#F3E8FF', 'Export PDF',
+            exporting
+              ? <Text style={styles.rightValueText}>Generating…</Text>
+              : <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />,
+            exporting ? undefined : handleExportPDF, false
           )}
           {renderRow('trash-outline', COLORS.expense, '#FEF2F2', 'Clear All Data',
-            <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />, () => setShowClearConfirm(true), false
+            <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />, () => setShowClearConfirm(true), true
           )}
-          {/* {renderRow('log-out-outline', COLORS.expense, '#FEF2F2', 'Sign Out',
-            <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />, undefined, true
-          )} */}
         </View>
 
         {/* About */}
@@ -674,6 +763,79 @@ export default function SettingsScreen() {
               style={tw`w-full bg-slate-100 py-4 rounded-2xl`}
               activeOpacity={0.8}
               onPress={() => setShowClearConfirm(false)}
+            >
+              <Text style={tw`text-center text-slate-700 font-bold text-base`}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Import Backup Confirmation Modal */}
+      {showImportConfirm && pendingBackup && (
+        <View style={StyleSheet.absoluteFill}>
+          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => { setShowImportConfirm(false); setPendingBackup(null); }} />
+          <View style={tw`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl px-6 pt-8 pb-10 shadow-2xl`}>
+            {/* Icon */}
+            <View style={tw`items-center mb-6`}>
+              <View style={tw`w-16 h-16 rounded-full bg-blue-50 items-center justify-center mb-4`}>
+                <Ionicons name="cloud-download-outline" size={32} color="#3B82F6" />
+              </View>
+              <Text style={tw`text-xl font-bold text-slate-900 text-center mb-2`}>Restore from Backup?</Text>
+              <Text style={tw`text-sm text-slate-500 text-center leading-relaxed px-4`}>
+                This will replace all your current data with the backup from{' '}
+                <Text style={tw`font-bold text-slate-700`}>
+                  {new Date(pendingBackup.exportedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </Text>
+                . This action cannot be undone.
+              </Text>
+            </View>
+
+            {/* Backup summary */}
+            <View style={tw`bg-blue-50 rounded-2xl p-4 mb-6`}>
+              <View style={tw`flex-row items-center mb-3`}>
+                <Ionicons name="receipt-outline" size={18} color="#3B82F6" />
+                <Text style={tw`text-sm text-slate-700 ml-3`}>
+                  {pendingBackup.data.transactions.length} transaction{pendingBackup.data.transactions.length !== 1 ? 's' : ''}
+                </Text>
+              </View>
+              <View style={tw`flex-row items-center mb-3`}>
+                <Ionicons name="flag-outline" size={18} color="#3B82F6" />
+                <Text style={tw`text-sm text-slate-700 ml-3`}>
+                  {pendingBackup.data.goals.length} saving goal{pendingBackup.data.goals.length !== 1 ? 's' : ''}
+                </Text>
+              </View>
+              <View style={tw`flex-row items-center`}>
+                <Ionicons name="person-outline" size={18} color="#3B82F6" />
+                <Text style={tw`text-sm text-slate-700 ml-3`}>
+                  {pendingBackup.data.preferences.userProfile?.fullName || 'Guest User'}'s profile & preferences
+                </Text>
+              </View>
+            </View>
+
+            {/* Warning */}
+            <View style={tw`flex-row items-start bg-amber-50 rounded-xl p-3 mb-6 border border-amber-200`}>
+              <Ionicons name="alert-circle" size={18} color="#D97706" style={{ marginTop: 1 }} />
+              <Text style={tw`text-xs text-amber-800 ml-2 flex-1 leading-relaxed`}>
+                Your current transactions, goals, and preferences will be permanently replaced.
+              </Text>
+            </View>
+
+            {/* Action Buttons */}
+            <TouchableOpacity
+              style={tw`w-full bg-blue-500 py-4 rounded-2xl mb-3`}
+              activeOpacity={0.8}
+              onPress={handleConfirmImport}
+              disabled={importing}
+            >
+              <Text style={tw`text-center text-white font-bold text-base`}>
+                {importing ? 'Restoring…' : 'Yes, Restore Backup'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={tw`w-full bg-slate-100 py-4 rounded-2xl`}
+              activeOpacity={0.8}
+              onPress={() => { setShowImportConfirm(false); setPendingBackup(null); }}
             >
               <Text style={tw`text-center text-slate-700 font-bold text-base`}>Cancel</Text>
             </TouchableOpacity>
