@@ -22,6 +22,7 @@ import { useUser } from '../../contexts/UserContext';
 import { useFont, FONT_OPTIONS, FONT_WEIGHT_MAPS, FontFamily } from '../../contexts/FontContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { COLORS } from '../../lib/constants';
+import { formatCurrency } from '../../lib/format';
 import { clearAllData } from '../../lib/db/queries';
 import { exportBackup, validateBackup, importBackup, readBackupFile, CashBookBackup } from '../../lib/backup';
 import * as Print from 'expo-print';
@@ -369,12 +370,12 @@ export default function SettingsScreen() {
 
           <View style={styles.statsRow}>
             <View style={styles.statColumn}>
-              <Text style={styles.statValue}>৳{balance.toFixed(0)}</Text>
+              <Text style={styles.statValue}>{formatCurrency(balance)}</Text>
               <Text style={styles.statLabel}>Balance</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statColumn}>
-              <Text style={[styles.statValue, { color: COLORS.primary }]}>৳{savedAmount.toFixed(0)}</Text>
+              <Text style={[styles.statValue, { color: COLORS.primary }]}>{formatCurrency(savedAmount)}</Text>
               <Text style={styles.statLabel}>Saved</Text>
             </View>
             <View style={styles.statDivider} />

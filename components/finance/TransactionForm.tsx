@@ -47,7 +47,6 @@ export function TransactionForm({ transaction, onSubmit }: TransactionFormProps)
     });
   };
 
-  const displayAmount = amount ? parseFloat(amount).toFixed(2) : '0.00';
 
   return (
     <ScrollView
