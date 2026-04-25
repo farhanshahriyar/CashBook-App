@@ -71,11 +71,14 @@ export function GoalForm({ goal, onSubmit }: GoalFormProps) {
     onSubmit({
       title: title.trim(),
       targetAmount: parseFloat(targetAmount),
-      savedAmount: parseFloat(startingAmount) || 0,
+      // When editing, preserve the current savedAmount from DB to avoid overwriting contributions
+      savedAmount: goal ? goal.savedAmount : (parseFloat(startingAmount) || 0),
       emoji,
       color: selectedColor,
     });
   };
+
+  const isEditing = !!goal;
 
   return (
     <ScrollView
@@ -135,19 +138,23 @@ export function GoalForm({ goal, onSubmit }: GoalFormProps) {
         />
       </View>
 
-      {/* Starting Amount */}
-      <Text style={styles.fieldLabel}>STARTING AMOUNT (BDT)</Text>
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.textInput}
-          value={startingAmount}
-          onChangeText={setStartingAmount}
-          placeholder="0"
-          placeholderTextColor={COLORS.textSecondary}
-          keyboardType="decimal-pad"
-          returnKeyType="done"
-        />
-      </View>
+      {/* Starting Amount — hidden in edit mode to prevent overwriting contribution progress */}
+      {!isEditing && (
+        <>
+          <Text style={styles.fieldLabel}>STARTING AMOUNT (BDT)</Text>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.textInput}
+              value={startingAmount}
+              onChangeText={setStartingAmount}
+              placeholder="0"
+              placeholderTextColor={COLORS.textSecondary}
+              keyboardType="decimal-pad"
+              returnKeyType="done"
+            />
+          </View>
+        </>
+      )}
 
       {/* Deadline */}
       <Text style={styles.fieldLabel}>DEADLINE</Text>

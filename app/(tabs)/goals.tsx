@@ -4,6 +4,7 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -48,6 +49,21 @@ export default function GoalsScreen() {
   const closeModal = () => {
     setSelectedGoal(null);
     setMode(ModalMode.NONE);
+  };
+
+  const confirmDelete = (goal: Goal) => {
+    Alert.alert(
+      'Delete Goal',
+      `Are you sure you want to delete "${goal.title}"? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => removeGoal(goal.id),
+        },
+      ]
+    );
   };
 
   const handleGoalSubmit = (data: { title: string; targetAmount: number; savedAmount: number; emoji: string; color: string }) => {
@@ -165,7 +181,7 @@ export default function GoalsScreen() {
                     <TouchableOpacity onPress={() => openEdit(goal)}>
                       <Ionicons name="pencil-outline" size={20} color="#94A3B8" />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => removeGoal(goal.id)}>
+                    <TouchableOpacity onPress={() => confirmDelete(goal)}>
                       <Ionicons name="trash-outline" size={20} color="#94A3B8" />
                     </TouchableOpacity>
                   </View>
@@ -218,12 +234,13 @@ export default function GoalsScreen() {
       <AppModal visible={mode !== ModalMode.NONE} onClose={closeModal} title={modalTitle}>
         {mode === ModalMode.CONTRIBUTE && selectedGoal ? (
           <ContributionForm goal={selectedGoal} onSubmit={handleContributeSubmit} />
-        ) : (
+        ) : (mode === ModalMode.CREATE || mode === ModalMode.EDIT) ? (
           <GoalForm
+            key={mode === ModalMode.EDIT ? `edit-${selectedGoal?.id}` : 'create'}
             goal={mode === ModalMode.EDIT ? selectedGoal ?? undefined : undefined}
             onSubmit={handleGoalSubmit}
           />
-        )}
+        ) : null}
       </AppModal>
     </SafeAreaView>
   );
