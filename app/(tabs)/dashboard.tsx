@@ -15,6 +15,7 @@ import { BalanceCard } from '../../components/finance/BalanceCard';
 import { AppModal } from '../../components/ui/Modal';
 import { TransactionDetails } from '../../components/finance/TransactionDetails';
 import { COLORS, CATEGORY_ICONS, CATEGORY_COLORS } from '../../lib/constants';
+import { formatCurrency } from '../../lib/format';
 import type { Transaction } from '../../lib/db/queries';
 
 export default function DashboardScreen() {
@@ -85,15 +86,13 @@ export default function DashboardScreen() {
                 const progress = goal.targetAmount > 0
                   ? Math.min((goal.savedAmount / goal.targetAmount) * 100, 100)
                   : 0;
-                const bgColors = ['#FFF7ED', '#ECFDF5', '#EFF6FF', '#FEF2F2'];
-                const barColorValues = ['#F97316', '#16A34A', '#3B82F6', '#EF4444'];
-                const colorIdx = index % bgColors.length;
+                const goalColor = goal.color || '#16A34A';
 
                 return (
                   <React.Fragment key={goal.id}>
                     {index > 0 && <View style={styles.goalDivider} />}
                     <View style={styles.goalRow}>
-                      <View style={[styles.goalIcon, { backgroundColor: bgColors[colorIdx] }]}>
+                      <View style={[styles.goalIcon, { backgroundColor: goalColor + '18' }]}>
                         <Text style={styles.goalEmoji}>{goal.emoji || '🎯'}</Text>
                       </View>
                       <View style={styles.goalInfo}>
@@ -104,15 +103,15 @@ export default function DashboardScreen() {
                               styles.goalBarFill,
                               {
                                 width: `${progress}%`,
-                                backgroundColor: barColorValues[colorIdx],
+                                backgroundColor: goalColor,
                               },
                             ]}
                           />
                         </View>
                       </View>
                       <View style={styles.goalAmounts}>
-                        <Text style={styles.goalSaved}>৳{goal.savedAmount.toFixed(0)}</Text>
-                        <Text style={styles.goalTarget}>of ৳{goal.targetAmount.toFixed(0)}</Text>
+                        <Text style={styles.goalSaved}>{formatCurrency(goal.savedAmount)}</Text>
+                        <Text style={styles.goalTarget}>of {formatCurrency(goal.targetAmount)}</Text>
                       </View>
                     </View>
                   </React.Fragment>
@@ -162,7 +161,7 @@ export default function DashboardScreen() {
                         </Text>
                       </View>
                       <Text style={[styles.txAmount, { color: isIncome ? '#16A34A' : '#EF4444' }]}>
-                        {isIncome ? '+' : '-'}৳{tx.amount.toFixed(2)}
+                        {isIncome ? '+' : '-'}{formatCurrency(tx.amount)}
                       </Text>
                     </View>
                   </TouchableOpacity>
