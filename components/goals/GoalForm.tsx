@@ -24,11 +24,11 @@ function getSafeDeadlineDate(monthsToAdd: number): Date {
 }
 
 const DEADLINE_OPTIONS = [
-  { label: '30 days', days: 30 },
-  { label: '60 days', days: 60 },
-  { label: '90 days', days: 90 },
-  { label: '6 months', days: 180 },
-  { label: '1 year', days: 365 },
+  { label: '30d', days: 30 },
+  { label: '60d', days: 60 },
+  { label: '90d', days: 90 },
+  { label: '6mo', days: 180 },
+  { label: '1yr', days: 365 },
 ];
 
 const GOAL_COLORS = [
@@ -71,11 +71,14 @@ export function GoalForm({ goal, onSubmit }: GoalFormProps) {
     onSubmit({
       title: title.trim(),
       targetAmount: parseFloat(targetAmount),
-      savedAmount: parseFloat(startingAmount) || 0,
+      // When editing, preserve the current savedAmount from DB to avoid overwriting contributions
+      savedAmount: goal ? goal.savedAmount : (parseFloat(startingAmount) || 0),
       emoji,
       color: selectedColor,
     });
   };
+
+  const isEditing = !!goal;
 
   return (
     <ScrollView
@@ -135,19 +138,23 @@ export function GoalForm({ goal, onSubmit }: GoalFormProps) {
         />
       </View>
 
-      {/* Starting Amount */}
-      <Text style={styles.fieldLabel}>STARTING AMOUNT (BDT)</Text>
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.textInput}
-          value={startingAmount}
-          onChangeText={setStartingAmount}
-          placeholder="0"
-          placeholderTextColor={COLORS.textSecondary}
-          keyboardType="decimal-pad"
-          returnKeyType="done"
-        />
-      </View>
+      {/* Starting Amount — hidden in edit mode to prevent overwriting contribution progress */}
+      {!isEditing && (
+        <>
+          <Text style={styles.fieldLabel}>STARTING AMOUNT (BDT)</Text>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.textInput}
+              value={startingAmount}
+              onChangeText={setStartingAmount}
+              placeholder="0"
+              placeholderTextColor={COLORS.textSecondary}
+              keyboardType="decimal-pad"
+              returnKeyType="done"
+            />
+          </View>
+        </>
+      )}
 
       {/* Deadline */}
       <Text style={styles.fieldLabel}>DEADLINE</Text>
@@ -181,12 +188,16 @@ export function GoalForm({ goal, onSubmit }: GoalFormProps) {
         {GOAL_COLORS.map((color) => (
           <TouchableOpacity
             key={color}
-            style={[styles.colorCircle, { backgroundColor: color }]}
+            style={[
+              styles.colorCircle,
+              { backgroundColor: color },
+              selectedColor === color && styles.colorCircleSelected,
+            ]}
             onPress={() => setSelectedColor(color)}
             activeOpacity={0.7}
           >
             {selectedColor === color && (
-              <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+              <Ionicons name="checkmark" size={16} color="#FFFFFF" />
             )}
           </TouchableOpacity>
         ))}
@@ -196,6 +207,7 @@ export function GoalForm({ goal, onSubmit }: GoalFormProps) {
       <TouchableOpacity
         style={[
           styles.submitButton,
+          { backgroundColor: selectedColor },
           !isValid && styles.submitButtonDisabled,
         ]}
         onPress={handleSubmit}
@@ -216,7 +228,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 32,
+    paddingBottom: 40,
+    flexGrow: 1,
   },
 
   // Labels
@@ -225,48 +238,50 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.textSecondary,
     letterSpacing: 1,
-    marginBottom: 10,
+    marginBottom: 8,
   },
 
   // Emoji
   emojiScrollArea: {
     marginHorizontal: -20, // Negative margin to allow full-width bleeding during scrolling
     paddingHorizontal: 20, // Padding to start/end points aligned with other content
-    marginBottom: 20,
+    marginBottom: 18,
   },
   emojiRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
     paddingRight: 40, // Extra padding at end for full width scroll area
   },
   emojiItem: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
   },
   emojiItemSelected: {
     backgroundColor: '#DCFCE7', // Light green
+    borderWidth: 2,
+    borderColor: '#16A34A',
   },
   emojiText: {
-    fontSize: 22,
+    fontSize: 20,
   },
 
   // Inputs
   inputContainer: {
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: COLORS.card,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   textInput: {
     fontSize: 15,
     color: COLORS.text,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 13,
   },
 
   // Deadline
@@ -274,11 +289,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   deadlineChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -290,7 +305,7 @@ const styles = StyleSheet.create({
   },
   deadlineChipText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '600',
     color: COLORS.textSecondary,
   },
   deadlineChipTextActive: {
@@ -299,29 +314,38 @@ const styles = StyleSheet.create({
   targetDateText: {
     fontSize: 12,
     color: COLORS.textSecondary,
-    marginBottom: 20,
-    marginTop: 4,
+    marginBottom: 18,
+    marginTop: 2,
   },
 
   // Color
   colorRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
-    marginBottom: 28,
+    marginBottom: 24,
   },
   colorCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  colorCircleSelected: {
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.9)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
   },
 
   // Submit
   submitButton: {
-    backgroundColor: '#6366F1',
     paddingVertical: 16,
-    borderRadius: 14,
+    borderRadius: 16,
     alignItems: 'center',
   },
   submitButtonDisabled: {

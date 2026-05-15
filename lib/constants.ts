@@ -48,6 +48,17 @@ export const CATEGORY_COLORS: Record<string, string> = {
   Other: '#64748B',
 };
 
+export const CATEGORY_BGS: Record<string, string> = {
+  'Food & Drink': 'bg-amber-100',
+  Transport: 'bg-blue-100',
+  Entertainment: 'bg-pink-100',
+  Shopping: 'bg-violet-100',
+  Housing: 'bg-indigo-100',
+  Health: 'bg-cyan-100',
+  Education: 'bg-emerald-100',
+  Other: 'bg-slate-100',
+};
+
 export const CATEGORY_ICONS: Record<string, string> = {
   'Food & Drink': 'fast-food-outline',
   Transport: 'navigate-outline',

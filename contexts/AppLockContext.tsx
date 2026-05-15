@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useCallback, useState, useEffect } from 'react';
+import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as LocalAuthentication from 'expo-local-authentication';
 
@@ -40,9 +41,9 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
   const authenticate = useCallback(async (): Promise<boolean> => {
     const result = await LocalAuthentication.authenticateAsync({
       promptMessage: 'Unlock CashBook',
-      fallbackLabel: 'Enter PIN',
+      fallbackLabel: 'Use Passcode',
       cancelLabel: 'Cancel',
-      disableDeviceFallback: true,
+      disableDeviceFallback: false, // Allow PIN/passcode fallback to prevent permanent lockout
     });
     if (result.success) {
       setState((prev) => ({ ...prev, isLocked: false }));
@@ -77,6 +78,17 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
           // Stay locked — user can tap "Unlock" button later
           setState((prev) => ({ ...prev, isLocked: true }));
         }
+      } else if (biometricEnabled && !isEnrolled) {
+        // Edge case: user had biometric enabled but removed enrollment from device settings.
+        // Auto-disable the lock and let them in — they can re-enable after re-enrolling.
+        await AsyncStorage.setItem(LOCK_ENABLED_KEY, 'false');
+        setState({
+          isLocked: false,
+          isBiometricEnabled: false,
+          biometricType,
+          isEnrolled,
+          isReady: true,
+        });
       } else {
         // No lock needed
         setState({
@@ -91,6 +103,29 @@ export function AppLockProvider({ children }: { children: React.ReactNode }) {
   }, [authenticate]);
 
   const setBiometricEnabled = useCallback(async (enabled: boolean) => {
+    if (enabled) {
+      // Re-check enrollment at toggle time — user may have removed biometrics
+      // from device settings while the app was open
+      const currentlyEnrolled = await LocalAuthentication.isEnrolledAsync();
+      const currentTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
+      const nowEnrolled = currentlyEnrolled && currentTypes.length > 0;
+
+      // Update state with fresh enrollment info
+      setState((prev) => ({
+        ...prev,
+        isEnrolled: nowEnrolled,
+        biometricType: nowEnrolled ? authTypeToString(currentTypes[0]) : 'none',
+      }));
+
+      if (!nowEnrolled) {
+        Alert.alert(
+          'Biometrics Not Set Up',
+          'Please enroll your fingerprints or face in your device settings to enable this feature.'
+        );
+        return;
+      }
+    }
+
     await AsyncStorage.setItem(LOCK_ENABLED_KEY, String(enabled));
     setState((prev) => ({ ...prev, isBiometricEnabled: enabled }));
     if (!enabled) {

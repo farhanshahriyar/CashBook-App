@@ -1,4 +1,6 @@
 import React, { useState, useCallback } from 'react';
+// NOTE: tw (twrnc) removed from this file — it caused runtime crashes in production APK
+// builds due to on-the-fly parsing of arbitrary-value classes. All styles are now in StyleSheet.
 import {
   View,
   StyleSheet,
@@ -22,10 +24,13 @@ import { useUser } from '../../contexts/UserContext';
 import { useFont, FONT_OPTIONS, FONT_WEIGHT_MAPS, FontFamily } from '../../contexts/FontContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { COLORS } from '../../lib/constants';
+import { formatCurrency, parseLocalDate } from '../../lib/format';
 import { clearAllData } from '../../lib/db/queries';
+import { exportBackup, validateBackup, importBackup, readBackupFile, CashBookBackup } from '../../lib/backup';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import tw from '../../lib/tw';
+import * as DocumentPicker from 'expo-document-picker';
+// tw import removed — was causing crash in APK builds
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -41,6 +46,10 @@ export default function SettingsScreen() {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [backingUp, setBackingUp] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [showImportConfirm, setShowImportConfirm] = useState(false);
+  const [pendingBackup, setPendingBackup] = useState<CashBookBackup | null>(null);
 
   const handleClearData = useCallback(async () => {
     setClearing(true);
@@ -132,7 +141,7 @@ export default function SettingsScreen() {
       const rows = transactions.map(
         (tx) =>
           `<tr>
-            <td>${new Date(tx.date).toLocaleDateString()}</td>
+            <td>${parseLocalDate(tx.date).toLocaleDateString()}</td>
             <td>${tx.note || tx.category}</td>
             <td><span class="badge">${tx.category.toLowerCase()}</span></td>
             <td style="text-align: right;" class="${tx.type === 'income' ? 'amt-income' : 'amt-expense'}">${tx.type === 'income' ? '+' : '-'}৳${tx.amount.toFixed(0)}</td>
@@ -227,6 +236,79 @@ export default function SettingsScreen() {
     }
   }, [transactions, balance, monthlyIncome, monthlyExpense]);
 
+  // ── Backup Export ─────────────────────────────────────────────────────────
+  const handleExportBackup = useCallback(async () => {
+    setBackingUp(true);
+    try {
+      const fileUri = await exportBackup();
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/json',
+          dialogTitle: 'Save CashBook Backup',
+          UTI: 'public.json',
+        });
+      } else {
+        Alert.alert('Sharing Unavailable', 'Sharing is not available on this device.');
+      }
+    } catch (err) {
+      console.error('Export backup error:', err);
+      Alert.alert('Export Failed', 'Could not create backup. Please try again.');
+    } finally {
+      setBackingUp(false);
+    }
+  }, []);
+
+  // ── Backup Import ─────────────────────────────────────────────────────────
+  const handlePickImportFile = useCallback(async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/json',
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) return;
+
+      const asset = result.assets[0];
+
+      let parsed: unknown;
+      try {
+        parsed = await readBackupFile(asset.uri);
+      } catch {
+        Alert.alert('Invalid File', 'The selected file is not valid JSON.');
+        return;
+      }
+
+      const backup = validateBackup(parsed);
+      setPendingBackup(backup);
+      setShowImportConfirm(true);
+    } catch (err: any) {
+      Alert.alert('Import Error', err?.message || 'Could not read the backup file.');
+    }
+  }, []);
+
+  const handleConfirmImport = useCallback(async () => {
+    if (!pendingBackup) return;
+    setImporting(true);
+    try {
+      await importBackup(pendingBackup);
+      await refresh();
+
+      // Reload user profile into context
+      if (pendingBackup.data.preferences.userProfile) {
+        await saveProfile(pendingBackup.data.preferences.userProfile);
+      }
+
+      setShowImportConfirm(false);
+      setPendingBackup(null);
+      showToast('Backup restored successfully! 🎉');
+    } catch (err) {
+      console.error('Import backup error:', err);
+      Alert.alert('Restore Failed', 'Could not restore backup. Please try again.');
+    } finally {
+      setImporting(false);
+    }
+  }, [pendingBackup, refresh, saveProfile, showToast]);
+
   const renderSectionHeader = (title: string) => (
     <Text style={styles.sectionTitle}>{title}</Text>
   );
@@ -263,7 +345,7 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={styles.title}>Profile</Text>
         </View>
@@ -290,12 +372,12 @@ export default function SettingsScreen() {
 
           <View style={styles.statsRow}>
             <View style={styles.statColumn}>
-              <Text style={styles.statValue}>৳{balance.toFixed(0)}</Text>
+              <Text style={styles.statValue}>{formatCurrency(balance)}</Text>
               <Text style={styles.statLabel}>Balance</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statColumn}>
-              <Text style={[styles.statValue, { color: COLORS.primary }]}>৳{savedAmount.toFixed(0)}</Text>
+              <Text style={[styles.statValue, { color: COLORS.primary }]}>{formatCurrency(savedAmount)}</Text>
               <Text style={styles.statLabel}>Saved</Text>
             </View>
             <View style={styles.statDivider} />
@@ -375,25 +457,35 @@ export default function SettingsScreen() {
         {renderSectionHeader('SECURITY')}
         <View style={styles.cardGroup}>
           {renderRow('lock-closed-outline', '#64748B', '#F1F5F9', 'Biometric Lock',
-            <Switch value={isBiometricEnabled} onValueChange={setBiometricEnabled} trackColor={{ true: COLORS.primary }} />, undefined, false
+            <Switch value={isBiometricEnabled} onValueChange={setBiometricEnabled} trackColor={{ true: COLORS.primary }} disabled={!isEnrolled} />, undefined, false
           )}
           {renderRow('shield-checkmark-outline', '#64748B', '#F1F5F9', 'Privacy Policy',
             <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />, () => setShowPrivacyPolicy(true), true
           )}
         </View>
 
-        {/* Data */}
-        {renderSectionHeader('DATA')}
+        {/* Data Management */}
+        {renderSectionHeader('DATA MANAGEMENT')}
         <View style={styles.cardGroup}>
-          {renderRow('download-outline', COLORS.primary, '#DCFCE7', 'Export PDF',
-            <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />, handleExportPDF, false
+          {renderRow('cloud-upload-outline', COLORS.primary, '#DCFCE7', 'Export Backup',
+            backingUp
+              ? <Text style={styles.rightValueText}>Exporting…</Text>
+              : <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />,
+            backingUp ? undefined : handleExportBackup, false
+          )}
+          {renderRow('cloud-download-outline', '#3B82F6', '#DBEAFE', 'Import Backup',
+            <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />,
+            handlePickImportFile, false
+          )}
+          {renderRow('download-outline', '#8B5CF6', '#F3E8FF', 'Export PDF',
+            exporting
+              ? <Text style={styles.rightValueText}>Generating…</Text>
+              : <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />,
+            exporting ? undefined : handleExportPDF, false
           )}
           {renderRow('trash-outline', COLORS.expense, '#FEF2F2', 'Clear All Data',
-            <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />, () => setShowClearConfirm(true), false
+            <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />, () => setShowClearConfirm(true), true
           )}
-          {/* {renderRow('log-out-outline', COLORS.expense, '#FEF2F2', 'Sign Out',
-            <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />, undefined, true
-          )} */}
         </View>
 
         {/* About */}
@@ -630,62 +722,135 @@ export default function SettingsScreen() {
       {showClearConfirm && (
         <View style={StyleSheet.absoluteFill}>
           <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowClearConfirm(false)} />
-          <View style={tw`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl px-6 pt-8 pb-10 shadow-2xl`}>
+          <View style={styles.bottomSheet}>
             {/* Warning Icon */}
-            <View style={tw`items-center mb-6`}>
-              <View style={tw`w-16 h-16 rounded-full bg-red-50 items-center justify-center mb-4`}>
+            <View style={styles.bsCenter}>
+              <View style={[styles.bsIconCircle, { backgroundColor: '#FEF2F2' }]}>
                 <Ionicons name="warning-outline" size={32} color={COLORS.expense} />
               </View>
-              <Text style={tw`text-xl font-bold text-slate-900 text-center mb-2`}>Delete All Data?</Text>
-              <Text style={tw`text-sm text-slate-500 text-center leading-relaxed px-4`}>
+              <Text style={styles.bsTitle}>Delete All Data?</Text>
+              <Text style={styles.bsDescription}>
                 This will permanently erase all your transactions, goals, profile, and preferences. This action cannot be undone.
               </Text>
             </View>
 
             {/* Summary of what gets deleted */}
-            <View style={tw`bg-red-50 rounded-2xl p-4 mb-6`}>
-              <View style={tw`flex-row items-center mb-3`}>
+            <View style={[styles.bsSummaryBox, { backgroundColor: '#FEF2F2' }]}>
+              <View style={styles.bsSummaryRow}>
                 <Ionicons name="receipt-outline" size={18} color={COLORS.expense} />
-                <Text style={tw`text-sm text-slate-700 ml-3`}>{transactions.length} transaction{transactions.length !== 1 ? 's' : ''}</Text>
+                <Text style={styles.bsSummaryText}>{transactions.length} transaction{transactions.length !== 1 ? 's' : ''}</Text>
               </View>
-              <View style={tw`flex-row items-center mb-3`}>
+              <View style={styles.bsSummaryRow}>
                 <Ionicons name="flag-outline" size={18} color={COLORS.expense} />
-                <Text style={tw`text-sm text-slate-700 ml-3`}>All saving goals</Text>
+                <Text style={styles.bsSummaryText}>All saving goals</Text>
               </View>
-              <View style={tw`flex-row items-center`}>
+              <View style={[styles.bsSummaryRow, { marginBottom: 0 }]}>
                 <Ionicons name="person-outline" size={18} color={COLORS.expense} />
-                <Text style={tw`text-sm text-slate-700 ml-3`}>Profile & preferences</Text>
+                <Text style={styles.bsSummaryText}>Profile & preferences</Text>
               </View>
             </View>
 
             {/* Action Buttons */}
             <TouchableOpacity
-              style={tw`w-full bg-red-500 py-4 rounded-2xl mb-3`}
+              style={[styles.bsPrimaryBtn, { backgroundColor: '#EF4444' }]}
               activeOpacity={0.8}
               onPress={handleClearData}
               disabled={clearing}
             >
-              <Text style={tw`text-center text-white font-bold text-base`}>
+              <Text style={styles.bsPrimaryBtnText}>
                 {clearing ? 'Deleting...' : 'Yes, Delete Everything'}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={tw`w-full bg-slate-100 py-4 rounded-2xl`}
+              style={styles.bsSecondaryBtn}
               activeOpacity={0.8}
               onPress={() => setShowClearConfirm(false)}
             >
-              <Text style={tw`text-center text-slate-700 font-bold text-base`}>Cancel</Text>
+              <Text style={styles.bsSecondaryBtnText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
 
-      {/* Tailwind CSS Toast */}
+      {/* Import Backup Confirmation Modal */}
+      {showImportConfirm && pendingBackup && (
+        <View style={StyleSheet.absoluteFill}>
+          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => { setShowImportConfirm(false); setPendingBackup(null); }} />
+          <View style={styles.bottomSheet}>
+            {/* Icon */}
+            <View style={styles.bsCenter}>
+              <View style={[styles.bsIconCircle, { backgroundColor: '#EFF6FF' }]}>
+                <Ionicons name="cloud-download-outline" size={32} color="#3B82F6" />
+              </View>
+              <Text style={styles.bsTitle}>Restore from Backup?</Text>
+              <Text style={styles.bsDescription}>
+                This will replace all your current data with the backup from{' '}
+                <Text style={{ fontWeight: 'bold', color: '#334155' }}>
+                  {new Date(pendingBackup.exportedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </Text>
+                . This action cannot be undone.
+              </Text>
+            </View>
+
+            {/* Backup summary */}
+            <View style={[styles.bsSummaryBox, { backgroundColor: '#EFF6FF' }]}>
+              <View style={styles.bsSummaryRow}>
+                <Ionicons name="receipt-outline" size={18} color="#3B82F6" />
+                <Text style={styles.bsSummaryText}>
+                  {pendingBackup.data.transactions.length} transaction{pendingBackup.data.transactions.length !== 1 ? 's' : ''}
+                </Text>
+              </View>
+              <View style={styles.bsSummaryRow}>
+                <Ionicons name="flag-outline" size={18} color="#3B82F6" />
+                <Text style={styles.bsSummaryText}>
+                  {pendingBackup.data.goals.length} saving goal{pendingBackup.data.goals.length !== 1 ? 's' : ''}
+                </Text>
+              </View>
+              <View style={[styles.bsSummaryRow, { marginBottom: 0 }]}>
+                <Ionicons name="person-outline" size={18} color="#3B82F6" />
+                <Text style={styles.bsSummaryText}>
+                  {pendingBackup.data.preferences.userProfile?.fullName || 'Guest User'}'s profile & preferences
+                </Text>
+              </View>
+            </View>
+
+            {/* Warning */}
+            <View style={styles.bsWarningBox}>
+              <Ionicons name="alert-circle" size={18} color="#D97706" style={{ marginTop: 1 }} />
+              <Text style={styles.bsWarningText}>
+                Your current transactions, goals, and preferences will be permanently replaced.
+              </Text>
+            </View>
+
+            {/* Action Buttons */}
+            <TouchableOpacity
+              style={[styles.bsPrimaryBtn, { backgroundColor: '#3B82F6' }]}
+              activeOpacity={0.8}
+              onPress={handleConfirmImport}
+              disabled={importing}
+            >
+              <Text style={styles.bsPrimaryBtnText}>
+                {importing ? 'Restoring…' : 'Yes, Restore Backup'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.bsSecondaryBtn}
+              activeOpacity={0.8}
+              onPress={() => { setShowImportConfirm(false); setPendingBackup(null); }}
+            >
+              <Text style={styles.bsSecondaryBtnText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Toast */}
       {toastMessage && (
-        <View style={tw`absolute bottom-10 left-5 right-5 bg-slate-800 rounded-xl px-4 py-3.5 shadow-xl flex-row items-center border border-slate-700 z-50`}>
+        <View style={styles.toastContainer}>
           <Ionicons name="information-circle" size={22} color="#38BDF8" />
-          <Text style={tw`text-white flex-1 flex-wrap text-[13.5px] ml-3 font-medium leading-relaxed`}>
+          <Text style={styles.toastText}>
             {toastMessage}
           </Text>
         </View>
@@ -704,7 +869,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   header: {
-    paddingTop: Platform.OS === 'android' ? 48 : 16,
+    paddingTop: 8,
     paddingBottom: 16,
   },
   title: {
@@ -1004,5 +1169,136 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  // ── Bottom-sheet modal styles (replaced tw/twrnc to fix APK crash) ──────
+  bottomSheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 24,
+  },
+  bsCenter: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  bsIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  bsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#0F172A',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  bsDescription: {
+    fontSize: 14,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 21,
+    paddingHorizontal: 16,
+  },
+  bsSummaryBox: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+  },
+  bsSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  bsSummaryText: {
+    fontSize: 14,
+    color: '#334155',
+    marginLeft: 12,
+  },
+  bsWarningBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFFBEB',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  bsWarningText: {
+    fontSize: 12,
+    color: '#92400E',
+    marginLeft: 8,
+    flex: 1,
+    lineHeight: 18,
+  },
+  bsPrimaryBtn: {
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 16,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  bsPrimaryBtnText: {
+    textAlign: 'center',
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  bsSecondaryBtn: {
+    width: '100%',
+    backgroundColor: '#F1F5F9',
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  bsSecondaryBtnText: {
+    textAlign: 'center',
+    color: '#334155',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  toastContainer: {
+    position: 'absolute',
+    bottom: 40,
+    left: 20,
+    right: 20,
+    backgroundColor: '#1E293B',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#334155',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 10,
+    zIndex: 50,
+  },
+  toastText: {
+    color: '#FFFFFF',
+    flex: 1,
+    flexWrap: 'wrap',
+    fontSize: 13.5,
+    marginLeft: 12,
+    fontWeight: '500',
+    lineHeight: 20,
   },
 });

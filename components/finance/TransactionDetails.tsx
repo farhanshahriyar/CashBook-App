@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { CATEGORY_COLORS, CATEGORY_ICONS } from '../../lib/constants';
+import { CATEGORY_BGS, CATEGORY_COLORS, CATEGORY_ICONS } from '../../lib/constants';
+import { formatCurrency, parseLocalDate } from '../../lib/format';
 import type { Transaction } from '../../lib/db/queries';
 import tw from '../../lib/tw';
 
@@ -14,19 +15,9 @@ export function TransactionDetails({ tx }: { tx: Transaction }) {
     ? '#16A34A'
     : (CATEGORY_COLORS[tx.category] || '#64748B');
   
-  const bgMap: Record<string, string> = {
-    'Food & Drink': 'bg-amber-100',
-    Transport: 'bg-blue-100',
-    Entertainment: 'bg-pink-100',
-    Shopping: 'bg-violet-100',
-    Housing: 'bg-indigo-100',
-    Health: 'bg-cyan-100',
-    Education: 'bg-emerald-100',
-    Other: 'bg-slate-100',
-  };
-  const iconBg = isIncome ? 'bg-green-100' : (bgMap[tx.category] || 'bg-slate-100');
+  const iconBg = isIncome ? 'bg-green-100' : (CATEGORY_BGS[tx.category] || 'bg-slate-100');
 
-  const dateObj = new Date(tx.date);
+  const dateObj = parseLocalDate(tx.date);
   const formattedDate = dateObj.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -44,7 +35,7 @@ export function TransactionDetails({ tx }: { tx: Transaction }) {
       </View>
       <Text style={tw`text-base font-medium text-slate-500 mb-1`}>{isIncome ? 'Income' : tx.category}</Text>
       <Text style={tw`text-4xl font-bold mb-8 ${isIncome ? 'text-green-600' : 'text-red-500'}`}>
-        {isIncome ? '+' : '-'}৳{tx.amount.toFixed(2)}
+        {isIncome ? '+' : '-'}{formatCurrency(tx.amount)}
       </Text>
 
       <View style={tw`w-full bg-slate-50 rounded-2xl p-5 border border-slate-100`}>

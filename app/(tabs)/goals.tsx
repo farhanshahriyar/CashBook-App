@@ -4,7 +4,7 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -14,6 +14,7 @@ import { AppModal } from '../../components/ui/Modal';
 import { GoalForm } from '../../components/goals/GoalForm';
 import { ContributionForm } from '../../components/goals/ContributionForm';
 import type { Goal } from '../../lib/db/queries';
+import { formatCurrency } from '../../lib/format';
 import tw from '../../lib/tw';
 
 enum ModalMode {
@@ -51,6 +52,21 @@ export default function GoalsScreen() {
     setMode(ModalMode.NONE);
   };
 
+  const confirmDelete = (goal: Goal) => {
+    Alert.alert(
+      'Delete Goal',
+      `Are you sure you want to delete "${goal.title}"? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => removeGoal(goal.id),
+        },
+      ]
+    );
+  };
+
   const handleGoalSubmit = (data: { title: string; targetAmount: number; savedAmount: number; emoji: string; color: string }) => {
     if (mode === ModalMode.EDIT && selectedGoal) {
       editGoal({ ...data, id: selectedGoal.id });
@@ -78,7 +94,7 @@ export default function GoalsScreen() {
       <StatusBar style="dark" />
 
       {/* Header */}
-      <View style={[tw`px-5 pt-4 pb-1`, Platform.OS === 'android' && { paddingTop: 48 }]}>
+      <View style={tw`px-5 pt-4 pb-1`}>
         <View style={tw`flex-row justify-between items-center`}>
           <Text style={tw`text-3xl font-bold text-slate-900`}>Saving Goals</Text>
           <TouchableOpacity
@@ -118,8 +134,8 @@ export default function GoalsScreen() {
           <View style={tw`bg-white rounded-[24px] p-6 shadow-sm mb-6 border border-slate-50`}>
             <Text style={tw`text-slate-500 text-[15px] mb-2 font-medium`}>Total Saved</Text>
             <View style={tw`flex-row items-baseline mb-5`}>
-              <Text style={tw`text-[38px] font-black text-slate-900 tracking-tight`}>৳{totalSaved.toFixed(0)}</Text>
-              <Text style={tw`text-xl text-slate-500 font-medium ml-2`}>/ ৳{totalTarget.toFixed(0)}</Text>
+              <Text style={tw`text-[38px] font-black text-slate-900 tracking-tight`}>{formatCurrency(totalSaved)}</Text>
+              <Text style={tw`text-xl text-slate-500 font-medium ml-2`}>/ {formatCurrency(totalTarget)}</Text>
             </View>
             <View style={tw`w-full bg-[#f1f5f9] h-2.5 rounded-full mb-3 overflow-hidden`}>
               <View
@@ -135,24 +151,17 @@ export default function GoalsScreen() {
           </View>
 
           {/* Goal Cards */}
-          {goals.map((goal, index) => {
+          {goals.map((goal) => {
             const progress = goal.targetAmount > 0 ? (goal.savedAmount / goal.targetAmount) * 100 : 0;
             const remaining = Math.max(goal.targetAmount - goal.savedAmount, 0);
-
-            const themeStyles = [
-              { bg: 'bg-orange-50', text: 'text-orange-500', bar: 'bg-orange-500' },
-              { bg: 'bg-green-50', text: 'text-green-600', bar: 'bg-green-600' },
-              { bg: 'bg-rose-50', text: 'text-rose-500', bar: 'bg-rose-500' },
-              { bg: 'bg-blue-50', text: 'text-blue-500', bar: 'bg-blue-500' },
-            ];
-            const theme = themeStyles[index % themeStyles.length];
+            const goalColor = goal.color || '#16A34A';
 
             return (
               <View key={goal.id} style={tw`bg-white rounded-[24px] p-5 mb-4 border border-slate-50 shadow-sm`}>
                 {/* Card Header */}
                 <View style={tw`flex-row items-start justify-between mb-5`}>
                   <View style={tw`flex-row items-center flex-1`}>
-                    <View style={tw`w-12 h-12 rounded-full items-center justify-center ${theme.bg}`}>
+                    <View style={[tw`w-12 h-12 rounded-full items-center justify-center`, { backgroundColor: goalColor + '18' }]}>
                       <Text style={tw`text-[22px]`}>{goal.emoji || '🎯'}</Text>
                     </View>
                     <View style={tw`ml-3 flex-1`}>
@@ -166,7 +175,7 @@ export default function GoalsScreen() {
                     <TouchableOpacity onPress={() => openEdit(goal)}>
                       <Ionicons name="pencil-outline" size={20} color="#94A3B8" />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => removeGoal(goal.id)}>
+                    <TouchableOpacity onPress={() => confirmDelete(goal)}>
                       <Ionicons name="trash-outline" size={20} color="#94A3B8" />
                     </TouchableOpacity>
                   </View>
@@ -175,18 +184,18 @@ export default function GoalsScreen() {
                 {/* Progress Details */}
                 <View style={tw`flex-row justify-between items-baseline mb-3`}>
                   <View style={tw`flex-row items-baseline`}>
-                    <Text style={tw`text-[24px] font-bold text-slate-900 tracking-tight`}>৳{goal.savedAmount.toFixed(0)}</Text>
-                    <Text style={tw`text-[15px] font-medium text-slate-400 ml-1.5`}>/ ৳{goal.targetAmount.toFixed(0)}</Text>
+                    <Text style={tw`text-[24px] font-bold text-slate-900 tracking-tight`}>{formatCurrency(goal.savedAmount)}</Text>
+                    <Text style={tw`text-[15px] font-medium text-slate-400 ml-1.5`}>/ {formatCurrency(goal.targetAmount)}</Text>
                   </View>
-                  <Text style={tw`text-[16px] font-extrabold ${theme.text}`}>{progress.toFixed(0)}%</Text>
+                  <Text style={[tw`text-[16px] font-extrabold`, { color: goalColor }]}>{progress.toFixed(0)}%</Text>
                 </View>
 
                 {/* Progress Bar */}
                 <View style={tw`w-full bg-[#f1f5f9] h-2.5 rounded-full mb-4 overflow-hidden`}>
                   <View
                     style={[
-                      tw`h-full rounded-full ${theme.bar}`,
-                      { width: `${Math.min(progress, 100)}%` },
+                      tw`h-full rounded-full`,
+                      { width: `${Math.min(progress, 100)}%`, backgroundColor: goalColor },
                     ]}
                   />
                 </View>
@@ -194,14 +203,14 @@ export default function GoalsScreen() {
                 {/* Footer */}
                 <View style={tw`flex-row justify-between items-center`}>
                   <Text style={tw`text-[14px] text-slate-400 font-medium`}>
-                    ৳{remaining.toFixed(0)} to go
+                    {formatCurrency(remaining)} to go
                   </Text>
                   {remaining > 0 ? (
                     <TouchableOpacity
                       onPress={() => openContribute(goal)}
-                      style={tw`px-4 py-2 rounded-full ${theme.bg}`}
+                      style={[tw`px-4 py-2 rounded-full`, { backgroundColor: goalColor + '18' }]}
                     >
-                      <Text style={tw`font-bold text-[13.5px] ${theme.text}`}>+ Add Funds</Text>
+                      <Text style={[tw`font-bold text-[13.5px]`, { color: goalColor }]}>+ Add Funds</Text>
                     </TouchableOpacity>
                   ) : (
                     <View style={tw`px-4 py-2 rounded-full bg-green-50`}>
@@ -219,12 +228,13 @@ export default function GoalsScreen() {
       <AppModal visible={mode !== ModalMode.NONE} onClose={closeModal} title={modalTitle}>
         {mode === ModalMode.CONTRIBUTE && selectedGoal ? (
           <ContributionForm goal={selectedGoal} onSubmit={handleContributeSubmit} />
-        ) : (
+        ) : (mode === ModalMode.CREATE || mode === ModalMode.EDIT) ? (
           <GoalForm
+            key={mode === ModalMode.EDIT ? `edit-${selectedGoal?.id}` : 'create'}
             goal={mode === ModalMode.EDIT ? selectedGoal ?? undefined : undefined}
             onSubmit={handleGoalSubmit}
           />
-        )}
+        ) : null}
       </AppModal>
     </SafeAreaView>
   );

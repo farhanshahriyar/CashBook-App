@@ -8,7 +8,7 @@ export function formatCurrency(amount: number): string {
 }
 
 export function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
+  const date = parseLocalDate(dateStr);
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -17,7 +17,7 @@ export function formatDate(dateStr: string): string {
 }
 
 export function formatMonth(dateStr: string): string {
-  const date = new Date(dateStr);
+  const date = parseLocalDate(dateStr);
   return date.toLocaleDateString('en-US', {
     month: 'long',
     year: 'numeric',
@@ -47,4 +47,13 @@ export function getAdjacentMonths(monthKey: string): { prev: string; next: strin
     prev: getMonthKey(prev),
     next: getMonthKey(next),
   };
+}
+
+export function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-');
+  return new Date(Number(year), Number(month) - 1, Number(day));
+}
+
+export function getLocalDateString(date: Date = new Date()): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }

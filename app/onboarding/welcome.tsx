@@ -91,10 +91,7 @@ export default function WelcomeScreen() {
           <TouchableOpacity
             style={tw`w-full bg-[#16A34A] py-4 rounded-xl shadow-sm`}
             activeOpacity={0.8}
-            onPress={() => {
-              // For now just route to index, handles not-implemented
-              router.replace('/');
-            }}
+            onPress={() => router.push('/onboarding/profile')}
           >
             <Text style={tw`text-center text-white font-bold text-lg`}>Log in</Text>
           </TouchableOpacity>

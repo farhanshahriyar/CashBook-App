@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, TextInput } from 'react-native';
 import { COLORS } from '../../lib/constants';
+import { formatCurrency } from '../../lib/format';
 import type { Goal } from '../../lib/db/queries';
 
 interface ContributionFormProps {
@@ -31,7 +32,7 @@ export function ContributionForm({ goal, onSubmit }: ContributionFormProps) {
           <View style={styles.goalTextContainer}>
             <Text style={styles.goalTitle}>{goal.title}</Text>
             <Text style={styles.goalProgressText}>
-              ৳{goal.savedAmount.toFixed(0)} saved of ৳{goal.targetAmount.toFixed(0)}
+              {formatCurrency(goal.savedAmount)} saved of {formatCurrency(goal.targetAmount)}
             </Text>
           </View>
         </View>
@@ -40,7 +41,7 @@ export function ContributionForm({ goal, onSubmit }: ContributionFormProps) {
         <View style={styles.progressBarContainer}>
           <View style={[styles.progressBarFill, { width: `${Math.min(progress, 100)}%` }]} />
         </View>
-        <Text style={styles.remainingText}>৳{remaining.toFixed(0)} remaining to reach goal</Text>
+        <Text style={styles.remainingText}>{formatCurrency(remaining)} remaining to reach goal</Text>
       </View>
 
       {/* Amount Input */}

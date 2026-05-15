@@ -4,7 +4,7 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -13,7 +13,9 @@ import { useFinance } from '../../contexts/FinanceContext';
 import { AppModal } from '../../components/ui/Modal';
 import { TransactionForm } from '../../components/finance/TransactionForm';
 import { TransactionDetails } from '../../components/finance/TransactionDetails';
-import { CATEGORY_COLORS, CATEGORY_ICONS, COLORS } from '../../lib/constants';
+import { CATEGORY_BGS, CATEGORY_COLORS, CATEGORY_ICONS, COLORS } from '../../lib/constants';
+import { formatCurrency } from '../../lib/format';
+import { parseLocalDate } from '../../lib/format';
 import type { Transaction } from '../../lib/db/queries';
 import tw from '../../lib/tw';
 
@@ -40,17 +42,19 @@ export default function TransactionsScreen() {
       return true;
     });
 
-    const groups: { [key: string]: typeof transactions } = {};
+    const groups: { [key: string]: { date: string; transactions: typeof transactions } } = {};
     filtered.forEach(tx => {
-      const dateObj = new Date(tx.date);
+      const dateObj = parseLocalDate(tx.date);
       const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
       const monthDay = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
       const key = `${dayName}, ${monthDay}`;
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(tx);
+      if (!groups[key]) groups[key] = { date: tx.date, transactions: [] };
+      groups[key].transactions.push(tx);
     });
 
-    return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
+    return Object.entries(groups)
+      .sort((a, b) => b[1].date.localeCompare(a[1].date))
+      .map(([key, value]) => [key, value.transactions] as [string, typeof transactions]);
   }, [transactions, filter]);
 
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
@@ -71,6 +75,22 @@ export default function TransactionsScreen() {
     setMode(ModalMode.NONE);
   };
 
+  const confirmDelete = (tx: Transaction) => {
+    const txTitle = tx.note?.split('\n')[0] || tx.category;
+    Alert.alert(
+      'Delete Transaction',
+      `Are you sure you want to delete "${txTitle}"? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => removeTransaction(tx.id),
+        },
+      ]
+    );
+  };
+
   const handleSubmit = (data: { type: 'income' | 'expense'; amount: number; category: string; note: string; date: string }) => {
     if (mode === ModalMode.EDIT && selectedTx) {
       editTransaction({ ...data, id: selectedTx.id });
@@ -83,20 +103,7 @@ export default function TransactionsScreen() {
   const getCategoryConfig = (category: string) => {
     const icon = CATEGORY_ICONS[category] || 'ellipsis-horizontal-outline';
     const color = CATEGORY_COLORS[category] || '#64748B';
-
-    // Create lighter background tint
-    const bgMap: Record<string, string> = {
-      'Food & Drink': 'bg-amber-100',
-      Transport: 'bg-blue-100',
-      Entertainment: 'bg-pink-100',
-      Shopping: 'bg-violet-100',
-      Housing: 'bg-indigo-100',
-      Health: 'bg-cyan-100',
-      Education: 'bg-emerald-100',
-      Other: 'bg-slate-100',
-    };
-    const bg = bgMap[category] || 'bg-slate-100';
-
+    const bg = CATEGORY_BGS[category] || 'bg-slate-100';
     return { icon, color, bg };
   };
 
@@ -107,7 +114,7 @@ export default function TransactionsScreen() {
       <StatusBar style="dark" />
 
       {/* Header */}
-      <View style={[tw`flex-row justify-between items-center px-5 pt-4 pb-3`, Platform.OS === 'android' && { paddingTop: 48 }]}>
+      <View style={tw`flex-row justify-between items-center px-5 pt-4 pb-3`}>
         <Text style={tw`text-3xl font-bold text-slate-900`}>Transactions</Text>
         <TouchableOpacity
           onPress={openCreate}
@@ -121,11 +128,11 @@ export default function TransactionsScreen() {
       <View style={tw`flex-row px-5 mb-3`}>
         <View style={tw`bg-green-100 px-3 py-1.5 rounded-xl flex-row items-center mr-3`}>
           <Ionicons name="arrow-down" size={14} color="#16A34A" />
-          <Text style={tw`text-green-700 font-semibold ml-1 text-sm`}>+৳{totalIncome.toFixed(0)}</Text>
+          <Text style={tw`text-green-700 font-semibold ml-1 text-sm`}>+{formatCurrency(totalIncome)}</Text>
         </View>
         <View style={tw`bg-red-100 px-3 py-1.5 rounded-xl flex-row items-center`}>
           <Ionicons name="arrow-up" size={14} color="#DC2626" />
-          <Text style={tw`text-red-700 font-semibold ml-1 text-sm`}>-৳{totalExpense.toFixed(0)}</Text>
+          <Text style={tw`text-red-700 font-semibold ml-1 text-sm`}>-{formatCurrency(totalExpense)}</Text>
         </View>
       </View>
 
@@ -187,13 +194,13 @@ export default function TransactionsScreen() {
                       <TouchableOpacity onPress={() => openEdit(tx)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                         <Ionicons name="pencil-outline" size={18} color="#94A3B8" />
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => removeTransaction(tx.id)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                      <TouchableOpacity onPress={() => confirmDelete(tx)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                         <Ionicons name="trash-outline" size={18} color="#94A3B8" />
                       </TouchableOpacity>
                     </View>
 
                     <Text style={tw`text-[16px] font-bold ${isIncome ? 'text-[#16A34A]' : 'text-red-600'}`}>
-                      {isIncome ? '+' : '-'}৳{tx.amount.toFixed(2)}
+                      {isIncome ? '+' : '-'}{formatCurrency(tx.amount)}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -212,12 +219,13 @@ export default function TransactionsScreen() {
       <AppModal visible={mode !== ModalMode.NONE} onClose={closeModal} title={modalTitle}>
         {mode === ModalMode.VIEW && selectedTx ? (
           <TransactionDetails tx={selectedTx} />
-        ) : (
+        ) : (mode === ModalMode.CREATE || mode === ModalMode.EDIT) ? (
           <TransactionForm
+            key={mode === ModalMode.EDIT ? `edit-${selectedTx?.id}` : 'create'}
             transaction={mode === ModalMode.EDIT ? selectedTx ?? undefined : undefined}
             onSubmit={handleSubmit}
           />
-        )}
+        ) : null}
       </AppModal>
     </SafeAreaView>
   );
