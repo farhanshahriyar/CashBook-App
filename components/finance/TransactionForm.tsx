@@ -63,7 +63,6 @@ export function TransactionForm({ transaction, onSubmit }: TransactionFormProps)
           onPress={() => setType('expense')}
           style={[
             styles.toggleBtn,
-            styles.toggleBtnLeft,
             type === 'expense' && styles.toggleBtnActiveExpense,
           ]}
           activeOpacity={0.7}
@@ -81,7 +80,6 @@ export function TransactionForm({ transaction, onSubmit }: TransactionFormProps)
           onPress={() => setType('income')}
           style={[
             styles.toggleBtn,
-            styles.toggleBtnRight,
             type === 'income' && styles.toggleBtnActiveIncome,
           ]}
           activeOpacity={0.7}
@@ -189,6 +187,7 @@ export function TransactionForm({ transaction, onSubmit }: TransactionFormProps)
         style={[
           styles.submitButton,
           !isValid && styles.submitButtonDisabled,
+          type === 'income' && styles.submitButtonIncome,
         ]}
         onPress={handleSubmit}
         disabled={!isValid}
@@ -212,25 +211,24 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 32,
+    paddingBottom: 40,
+    flexGrow: 1,
   },
 
   // Toggle
   toggleContainer: {
     flexDirection: 'row',
     backgroundColor: '#F1F5F9',
-    borderRadius: 28,
+    borderRadius: 16,
     padding: 4,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   toggleBtn: {
     flex: 1,
     paddingVertical: 12,
     alignItems: 'center',
-    borderRadius: 24,
+    borderRadius: 12,
   },
-  toggleBtnLeft: {},
-  toggleBtnRight: {},
   toggleBtnActiveExpense: {
     backgroundColor: '#FEE2E2',
   },
@@ -253,7 +251,7 @@ const styles = StyleSheet.create({
   amountSection: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 28,
+    paddingVertical: 20,
     marginBottom: 4,
   },
   amountRow: {
@@ -262,16 +260,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   currencySymbol: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '400',
     color: '#CBD5E1',
-    marginRight: 8,
+    marginRight: 6,
   },
   currencySymbolActive: {
     color: '#94A3B8',
   },
   amountInput: {
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: 'bold',
     color: COLORS.text,
     minWidth: 80,
@@ -292,19 +290,19 @@ const styles = StyleSheet.create({
 
   // Fields
   fieldSection: {
-    marginBottom: 20,
+    marginBottom: 18,
   },
   fieldLabel: {
     fontSize: 11,
     fontWeight: '700',
     color: COLORS.textSecondary,
     letterSpacing: 1,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   inputContainer: {
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: COLORS.card,
   },
   textInput: {
@@ -314,10 +312,10 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   noteContainer: {
-    minHeight: 90,
+    minHeight: 80,
   },
   noteInput: {
-    minHeight: 80,
+    minHeight: 72,
   },
 
   // Categories
@@ -327,7 +325,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryChip: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 20,
     borderWidth: 1,
@@ -335,18 +333,21 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
   },
   categoryChipText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     color: COLORS.textSecondary,
   },
 
   // Submit
   submitButton: {
-    backgroundColor: '#16A34A',
+    backgroundColor: '#EF4444',
     paddingVertical: 16,
-    borderRadius: 14,
+    borderRadius: 16,
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 8,
+  },
+  submitButtonIncome: {
+    backgroundColor: '#16A34A',
   },
   submitButtonDisabled: {
     opacity: 0.4,

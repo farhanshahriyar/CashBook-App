@@ -1,4 +1,6 @@
 import React, { useState, useCallback } from 'react';
+// NOTE: tw (twrnc) removed from this file — it caused runtime crashes in production APK
+// builds due to on-the-fly parsing of arbitrary-value classes. All styles are now in StyleSheet.
 import {
   View,
   StyleSheet,
@@ -28,7 +30,7 @@ import { exportBackup, validateBackup, importBackup, readBackupFile, CashBookBac
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
-import tw from '../../lib/tw';
+// tw import removed — was causing crash in APK builds
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -720,52 +722,52 @@ export default function SettingsScreen() {
       {showClearConfirm && (
         <View style={StyleSheet.absoluteFill}>
           <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowClearConfirm(false)} />
-          <View style={tw`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl px-6 pt-8 pb-10 shadow-2xl`}>
+          <View style={styles.bottomSheet}>
             {/* Warning Icon */}
-            <View style={tw`items-center mb-6`}>
-              <View style={tw`w-16 h-16 rounded-full bg-red-50 items-center justify-center mb-4`}>
+            <View style={styles.bsCenter}>
+              <View style={[styles.bsIconCircle, { backgroundColor: '#FEF2F2' }]}>
                 <Ionicons name="warning-outline" size={32} color={COLORS.expense} />
               </View>
-              <Text style={tw`text-xl font-bold text-slate-900 text-center mb-2`}>Delete All Data?</Text>
-              <Text style={tw`text-sm text-slate-500 text-center leading-relaxed px-4`}>
+              <Text style={styles.bsTitle}>Delete All Data?</Text>
+              <Text style={styles.bsDescription}>
                 This will permanently erase all your transactions, goals, profile, and preferences. This action cannot be undone.
               </Text>
             </View>
 
             {/* Summary of what gets deleted */}
-            <View style={tw`bg-red-50 rounded-2xl p-4 mb-6`}>
-              <View style={tw`flex-row items-center mb-3`}>
+            <View style={[styles.bsSummaryBox, { backgroundColor: '#FEF2F2' }]}>
+              <View style={styles.bsSummaryRow}>
                 <Ionicons name="receipt-outline" size={18} color={COLORS.expense} />
-                <Text style={tw`text-sm text-slate-700 ml-3`}>{transactions.length} transaction{transactions.length !== 1 ? 's' : ''}</Text>
+                <Text style={styles.bsSummaryText}>{transactions.length} transaction{transactions.length !== 1 ? 's' : ''}</Text>
               </View>
-              <View style={tw`flex-row items-center mb-3`}>
+              <View style={styles.bsSummaryRow}>
                 <Ionicons name="flag-outline" size={18} color={COLORS.expense} />
-                <Text style={tw`text-sm text-slate-700 ml-3`}>All saving goals</Text>
+                <Text style={styles.bsSummaryText}>All saving goals</Text>
               </View>
-              <View style={tw`flex-row items-center`}>
+              <View style={[styles.bsSummaryRow, { marginBottom: 0 }]}>
                 <Ionicons name="person-outline" size={18} color={COLORS.expense} />
-                <Text style={tw`text-sm text-slate-700 ml-3`}>Profile & preferences</Text>
+                <Text style={styles.bsSummaryText}>Profile & preferences</Text>
               </View>
             </View>
 
             {/* Action Buttons */}
             <TouchableOpacity
-              style={tw`w-full bg-red-500 py-4 rounded-2xl mb-3`}
+              style={[styles.bsPrimaryBtn, { backgroundColor: '#EF4444' }]}
               activeOpacity={0.8}
               onPress={handleClearData}
               disabled={clearing}
             >
-              <Text style={tw`text-center text-white font-bold text-base`}>
+              <Text style={styles.bsPrimaryBtnText}>
                 {clearing ? 'Deleting...' : 'Yes, Delete Everything'}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={tw`w-full bg-slate-100 py-4 rounded-2xl`}
+              style={styles.bsSecondaryBtn}
               activeOpacity={0.8}
               onPress={() => setShowClearConfirm(false)}
             >
-              <Text style={tw`text-center text-slate-700 font-bold text-base`}>Cancel</Text>
+              <Text style={styles.bsSecondaryBtnText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -775,16 +777,16 @@ export default function SettingsScreen() {
       {showImportConfirm && pendingBackup && (
         <View style={StyleSheet.absoluteFill}>
           <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => { setShowImportConfirm(false); setPendingBackup(null); }} />
-          <View style={tw`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl px-6 pt-8 pb-10 shadow-2xl`}>
+          <View style={styles.bottomSheet}>
             {/* Icon */}
-            <View style={tw`items-center mb-6`}>
-              <View style={tw`w-16 h-16 rounded-full bg-blue-50 items-center justify-center mb-4`}>
+            <View style={styles.bsCenter}>
+              <View style={[styles.bsIconCircle, { backgroundColor: '#EFF6FF' }]}>
                 <Ionicons name="cloud-download-outline" size={32} color="#3B82F6" />
               </View>
-              <Text style={tw`text-xl font-bold text-slate-900 text-center mb-2`}>Restore from Backup?</Text>
-              <Text style={tw`text-sm text-slate-500 text-center leading-relaxed px-4`}>
+              <Text style={styles.bsTitle}>Restore from Backup?</Text>
+              <Text style={styles.bsDescription}>
                 This will replace all your current data with the backup from{' '}
-                <Text style={tw`font-bold text-slate-700`}>
+                <Text style={{ fontWeight: 'bold', color: '#334155' }}>
                   {new Date(pendingBackup.exportedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </Text>
                 . This action cannot be undone.
@@ -792,63 +794,63 @@ export default function SettingsScreen() {
             </View>
 
             {/* Backup summary */}
-            <View style={tw`bg-blue-50 rounded-2xl p-4 mb-6`}>
-              <View style={tw`flex-row items-center mb-3`}>
+            <View style={[styles.bsSummaryBox, { backgroundColor: '#EFF6FF' }]}>
+              <View style={styles.bsSummaryRow}>
                 <Ionicons name="receipt-outline" size={18} color="#3B82F6" />
-                <Text style={tw`text-sm text-slate-700 ml-3`}>
+                <Text style={styles.bsSummaryText}>
                   {pendingBackup.data.transactions.length} transaction{pendingBackup.data.transactions.length !== 1 ? 's' : ''}
                 </Text>
               </View>
-              <View style={tw`flex-row items-center mb-3`}>
+              <View style={styles.bsSummaryRow}>
                 <Ionicons name="flag-outline" size={18} color="#3B82F6" />
-                <Text style={tw`text-sm text-slate-700 ml-3`}>
+                <Text style={styles.bsSummaryText}>
                   {pendingBackup.data.goals.length} saving goal{pendingBackup.data.goals.length !== 1 ? 's' : ''}
                 </Text>
               </View>
-              <View style={tw`flex-row items-center`}>
+              <View style={[styles.bsSummaryRow, { marginBottom: 0 }]}>
                 <Ionicons name="person-outline" size={18} color="#3B82F6" />
-                <Text style={tw`text-sm text-slate-700 ml-3`}>
+                <Text style={styles.bsSummaryText}>
                   {pendingBackup.data.preferences.userProfile?.fullName || 'Guest User'}'s profile & preferences
                 </Text>
               </View>
             </View>
 
             {/* Warning */}
-            <View style={tw`flex-row items-start bg-amber-50 rounded-xl p-3 mb-6 border border-amber-200`}>
+            <View style={styles.bsWarningBox}>
               <Ionicons name="alert-circle" size={18} color="#D97706" style={{ marginTop: 1 }} />
-              <Text style={tw`text-xs text-amber-800 ml-2 flex-1 leading-relaxed`}>
+              <Text style={styles.bsWarningText}>
                 Your current transactions, goals, and preferences will be permanently replaced.
               </Text>
             </View>
 
             {/* Action Buttons */}
             <TouchableOpacity
-              style={tw`w-full bg-blue-500 py-4 rounded-2xl mb-3`}
+              style={[styles.bsPrimaryBtn, { backgroundColor: '#3B82F6' }]}
               activeOpacity={0.8}
               onPress={handleConfirmImport}
               disabled={importing}
             >
-              <Text style={tw`text-center text-white font-bold text-base`}>
+              <Text style={styles.bsPrimaryBtnText}>
                 {importing ? 'Restoring…' : 'Yes, Restore Backup'}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={tw`w-full bg-slate-100 py-4 rounded-2xl`}
+              style={styles.bsSecondaryBtn}
               activeOpacity={0.8}
               onPress={() => { setShowImportConfirm(false); setPendingBackup(null); }}
             >
-              <Text style={tw`text-center text-slate-700 font-bold text-base`}>Cancel</Text>
+              <Text style={styles.bsSecondaryBtnText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
 
-      {/* Tailwind CSS Toast */}
+      {/* Toast */}
       {toastMessage && (
-        <View style={tw`absolute bottom-10 left-5 right-5 bg-slate-800 rounded-xl px-4 py-3.5 shadow-xl flex-row items-center border border-slate-700 z-50`}>
+        <View style={styles.toastContainer}>
           <Ionicons name="information-circle" size={22} color="#38BDF8" />
-          <Text style={tw`text-white flex-1 flex-wrap text-[13.5px] ml-3 font-medium leading-relaxed`}>
+          <Text style={styles.toastText}>
             {toastMessage}
           </Text>
         </View>
@@ -1167,5 +1169,136 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  // ── Bottom-sheet modal styles (replaced tw/twrnc to fix APK crash) ──────
+  bottomSheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 24,
+  },
+  bsCenter: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  bsIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  bsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#0F172A',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  bsDescription: {
+    fontSize: 14,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 21,
+    paddingHorizontal: 16,
+  },
+  bsSummaryBox: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+  },
+  bsSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  bsSummaryText: {
+    fontSize: 14,
+    color: '#334155',
+    marginLeft: 12,
+  },
+  bsWarningBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFFBEB',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  bsWarningText: {
+    fontSize: 12,
+    color: '#92400E',
+    marginLeft: 8,
+    flex: 1,
+    lineHeight: 18,
+  },
+  bsPrimaryBtn: {
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 16,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  bsPrimaryBtnText: {
+    textAlign: 'center',
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  bsSecondaryBtn: {
+    width: '100%',
+    backgroundColor: '#F1F5F9',
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  bsSecondaryBtnText: {
+    textAlign: 'center',
+    color: '#334155',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  toastContainer: {
+    position: 'absolute',
+    bottom: 40,
+    left: 20,
+    right: 20,
+    backgroundColor: '#1E293B',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#334155',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 10,
+    zIndex: 50,
+  },
+  toastText: {
+    color: '#FFFFFF',
+    flex: 1,
+    flexWrap: 'wrap',
+    fontSize: 13.5,
+    marginLeft: 12,
+    fontWeight: '500',
+    lineHeight: 20,
   },
 });
