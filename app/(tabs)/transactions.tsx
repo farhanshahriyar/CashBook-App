@@ -15,6 +15,7 @@ import { TransactionForm } from '../../components/finance/TransactionForm';
 import { TransactionDetails } from '../../components/finance/TransactionDetails';
 import { CATEGORY_BGS, CATEGORY_COLORS, CATEGORY_ICONS, COLORS } from '../../lib/constants';
 import { formatCurrency } from '../../lib/format';
+import { parseLocalDate } from '../../lib/format';
 import type { Transaction } from '../../lib/db/queries';
 import tw from '../../lib/tw';
 
@@ -43,7 +44,7 @@ export default function TransactionsScreen() {
 
     const groups: { [key: string]: { date: string; transactions: typeof transactions } } = {};
     filtered.forEach(tx => {
-      const dateObj = new Date(tx.date);
+      const dateObj = parseLocalDate(tx.date);
       const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
       const monthDay = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
       const key = `${dayName}, ${monthDay}`;

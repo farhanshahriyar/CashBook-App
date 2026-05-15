@@ -8,6 +8,7 @@ import {
   TextInput,
 } from 'react-native';
 import { COLORS, TRANSACTION_CATEGORIES, CATEGORY_COLORS } from '../../lib/constants';
+import { getLocalDateString } from '../../lib/format';
 import type { Transaction } from '../../lib/db/queries';
 
 interface TransactionFormProps {
@@ -28,7 +29,7 @@ export function TransactionForm({ transaction, onSubmit }: TransactionFormProps)
   const [category, setCategory] = useState(transaction?.category ?? TRANSACTION_CATEGORIES[0]);
   const [note, setNote] = useState(transaction?.note?.split('\n').slice(1).join('\n') ?? '');
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
   const isValid = amount && parseFloat(amount) > 0 && category;
 
   const handleSubmit = () => {

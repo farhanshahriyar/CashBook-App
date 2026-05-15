@@ -22,7 +22,7 @@ import { useUser } from '../../contexts/UserContext';
 import { useFont, FONT_OPTIONS, FONT_WEIGHT_MAPS, FontFamily } from '../../contexts/FontContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { COLORS } from '../../lib/constants';
-import { formatCurrency } from '../../lib/format';
+import { formatCurrency, parseLocalDate } from '../../lib/format';
 import { clearAllData } from '../../lib/db/queries';
 import { exportBackup, validateBackup, importBackup, readBackupFile, CashBookBackup } from '../../lib/backup';
 import * as Print from 'expo-print';
@@ -139,7 +139,7 @@ export default function SettingsScreen() {
       const rows = transactions.map(
         (tx) =>
           `<tr>
-            <td>${new Date(tx.date).toLocaleDateString()}</td>
+            <td>${parseLocalDate(tx.date).toLocaleDateString()}</td>
             <td>${tx.note || tx.category}</td>
             <td><span class="badge">${tx.category.toLowerCase()}</span></td>
             <td style="text-align: right;" class="${tx.type === 'income' ? 'amt-income' : 'amt-expense'}">${tx.type === 'income' ? '+' : '-'}৳${tx.amount.toFixed(0)}</td>
@@ -343,7 +343,7 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={styles.title}>Profile</Text>
         </View>

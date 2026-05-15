@@ -1,4 +1,5 @@
 import { getDatabase } from './sqlite';
+import { getMonthRange } from '../format';
 
 export interface Transaction {
   id: string;
@@ -94,8 +95,9 @@ export async function contributeToGoal(
   amount: number
 ): Promise<void> {
   const db = await getDatabase();
+  // Clamp savedAmount to never exceed targetAmount at the DB level
   await db.runAsync(
-    'UPDATE goals SET savedAmount = savedAmount + ? WHERE id = ?',
+    'UPDATE goals SET savedAmount = MIN(savedAmount + ?, targetAmount) WHERE id = ?',
     [amount, id]
   );
 }
@@ -133,38 +135,34 @@ export async function getMonthlyTotals(
   };
 }
 
-function getMonthRange(monthKey: string): { start: string; end: string } {
-  const [year, month] = monthKey.split('-').map(Number);
-  const start = `${year}-${String(month).padStart(2, '0')}-01`;
-  const lastDay = new Date(year, month, 0).getDate();
-  const end = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
-  return { start, end };
-}
+
 
 // ─── Bulk Insert (for backup restore) ───────────────────
 
 export async function bulkInsertTransactions(txs: Transaction[]): Promise<void> {
   if (txs.length === 0) return;
   const db = await getDatabase();
-  const statements = txs
-    .map(
-      (tx) =>
-        `INSERT OR REPLACE INTO transactions (id, type, amount, category, note, date) VALUES ('${tx.id.replace(/'/g, "''")}', '${tx.type}', ${tx.amount}, '${tx.category.replace(/'/g, "''")}', '${(tx.note || '').replace(/'/g, "''")}', '${tx.date}')`
-    )
-    .join(';\n');
-  await db.execAsync(statements);
+  await db.withTransactionAsync(async () => {
+    for (const tx of txs) {
+      await db.runAsync(
+        'INSERT OR REPLACE INTO transactions (id, type, amount, category, note, date) VALUES (?, ?, ?, ?, ?, ?)',
+        [tx.id, tx.type, tx.amount, tx.category, tx.note || '', tx.date]
+      );
+    }
+  });
 }
 
 export async function bulkInsertGoals(goals: Goal[]): Promise<void> {
   if (goals.length === 0) return;
   const db = await getDatabase();
-  const statements = goals
-    .map(
-      (g) =>
-        `INSERT OR REPLACE INTO goals (id, title, targetAmount, savedAmount, emoji, color) VALUES ('${g.id.replace(/'/g, "''")}', '${g.title.replace(/'/g, "''")}', ${g.targetAmount}, ${g.savedAmount}, '${g.emoji.replace(/'/g, "''")}', '${g.color}')`
-    )
-    .join(';\n');
-  await db.execAsync(statements);
+  await db.withTransactionAsync(async () => {
+    for (const g of goals) {
+      await db.runAsync(
+        'INSERT OR REPLACE INTO goals (id, title, targetAmount, savedAmount, emoji, color) VALUES (?, ?, ?, ?, ?, ?)',
+        [g.id, g.title, g.targetAmount, g.savedAmount, g.emoji, g.color]
+      );
+    }
+  });
 }
 
 // ─── Clear All Data ─────────────────────────────────────

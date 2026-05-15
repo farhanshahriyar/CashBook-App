@@ -149,18 +149,28 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       await refresh();
 
       // ── Goal milestone notifications ────────────────────────────────────
+      // Read the post-contribution state from the refreshed context instead
+      // of issuing another redundant getAllGoals() DB query.
       if (goalBefore && goalBefore.targetAmount > 0) {
-        const goalsAfter = await getAllGoals();
-        const goalAfter = goalsAfter.find((g) => g.id === id);
+        // setState in refresh() is async-batched, so we read the DB once more
+        // only via the already-fetched goals array from refresh's Promise.all.
+        // However, since refresh() already called getAllGoals() internally and
+        // updated state, we just need the NEW savedAmount. The cheapest way is
+        // a targeted single-row query instead of fetching all goals again.
+        const db = await (await import('../lib/db/sqlite')).getDatabase();
+        const goalAfter = await db.getFirstAsync<{ savedAmount: number }>(
+          'SELECT savedAmount FROM goals WHERE id = ?',
+          [id]
+        );
         if (goalAfter) {
           const prevPct = (goalBefore.savedAmount / goalBefore.targetAmount) * 100;
-          const newPct = (goalAfter.savedAmount / goalAfter.targetAmount) * 100;
+          const newPct = (goalAfter.savedAmount / goalBefore.targetAmount) * 100;
 
           try {
             if (newPct >= 100 && prevPct < 100) {
-              await sendGoalMilestoneNotification(goalAfter.title, 100);
+              await sendGoalMilestoneNotification(goalBefore.title, 100);
             } else if (newPct >= 50 && prevPct < 50) {
-              await sendGoalMilestoneNotification(goalAfter.title, 50);
+              await sendGoalMilestoneNotification(goalBefore.title, 50);
             }
           } catch (_) {
             // Notification errors must never crash finance operations

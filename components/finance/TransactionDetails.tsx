@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CATEGORY_BGS, CATEGORY_COLORS, CATEGORY_ICONS } from '../../lib/constants';
-import { formatCurrency } from '../../lib/format';
+import { formatCurrency, parseLocalDate } from '../../lib/format';
 import type { Transaction } from '../../lib/db/queries';
 import tw from '../../lib/tw';
 
@@ -17,7 +17,7 @@ export function TransactionDetails({ tx }: { tx: Transaction }) {
   
   const iconBg = isIncome ? 'bg-green-100' : (CATEGORY_BGS[tx.category] || 'bg-slate-100');
 
-  const dateObj = new Date(tx.date);
+  const dateObj = parseLocalDate(tx.date);
   const formattedDate = dateObj.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',

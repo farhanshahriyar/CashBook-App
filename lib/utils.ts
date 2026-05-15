@@ -1,7 +1,7 @@
-import { formatDate } from './format';
+import { formatDate, parseLocalDate } from './format';
 
 export function isToday(dateStr: string): boolean {
-  const date = new Date(dateStr);
+  const date = parseLocalDate(dateStr);
   const today = new Date();
   return (
     date.getDate() === today.getDate() &&
